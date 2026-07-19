@@ -1,0 +1,17 @@
+/.gradle/
+/.idea/
+/.vscode/
+/build/
+/buildSrc/build/
+/dist/
+/run/
+/versions/
+*.iml
+*.launch
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
+
+# Local redraw reference extracted from Simple Voice Chat; do not redistribute.
+/simple-voice-chat-microphone-reference.png

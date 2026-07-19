@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+  "name": "${name}",
+  "description": "${description}",
+  "authors": [
+    "sawiq_"
+  ],
+  "contact": {
+    "sources": "https://github.com/imsawiq"
+  },
+  "license": "CC-BY-NC-SA-4.0",
+  "icon": "assets/sv-voice-changer/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "org.sawiq.svvoicechanger.client.SvVoiceChangerFabric"
+    ],
+    "voicechat": [
+      "org.sawiq.svvoicechanger.integration.SimpleVoiceChatPlugin"
+    ]
+  },
+  "mixins": [
+    "sv-voice-changer.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${fabric_loader}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft}",
+    "voicechat": "*"
+  }
+}

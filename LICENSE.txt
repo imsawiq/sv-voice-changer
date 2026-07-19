@@ -1,0 +1,12 @@
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
+
+Copyright (c) 2026 sawiq_
+
+This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+
+You are free to share and adapt this project for non-commercial purposes only, provided that you give appropriate credit and distribute derivative works under the same license.
+
+Full license text: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+Human-readable summary: https://creativecommons.org/licenses/by-nc-sa/4.0/
