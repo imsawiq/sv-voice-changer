@@ -1,7 +1,7 @@
 [![GitHub](https://cdn.modrinth.com/data/cached_images/53263a70bb7a7689208e40d465e4377be013ccca.png)](https://github.com/imsawiq)
 [![Discord](https://cdn.modrinth.com/data/cached_images/be7e1b5fe7e280c38c5b29dd81c453ddfdad25c2.png)](https://discord.gg/UTxEy4PtSU)
 
-## EN
+# EN
 
 Client-side **Fabric and NeoForge** addon for **Simple Voice Chat**. It processes outgoing microphone audio in real time and adds a native-looking Voice Changer Studio to the Simple Voice Chat menu.
 
@@ -25,7 +25,7 @@ Client-side **Fabric and NeoForge** addon for **Simple Voice Chat**. It processe
 - **GitHub:** [imsawiq/sv-voice-changer](https://github.com/imsawiq/sv-voice-changer)
 - **Discord:** [Preset sharing server](https://discord.gg/UTxEy4PtSU)
 
-## RU
+# RU
 
 Клиентский аддон для **Fabric и NeoForge** под **Simple Voice Chat**. Он в реальном времени обрабатывает исходящий звук микрофона и аккуратно добавляет Voice Changer Studio прямо в меню Simple Voice Chat.
 
