@@ -28,6 +28,6 @@
     "fabricloader": ">=${fabric_loader}",
     "fabric-api": "*",
     "minecraft": "${minecraft}",
-    "voicechat": "*"
+    "voicechat": "${voicechat}"
   }
 }

@@ -63,6 +63,7 @@ tasks {
             "version" to project.property("mod.version").toString(),
             "description" to project.property("mod.description").toString(),
             "minecraft" to project.property("mod.mc_compat").toString(),
+            "voicechat" to project.property("deps.voicechat_compat").toString(),
             "fabric_loader" to project.property("deps.fabric_loader").toString()
         )
         inputs.properties(props)

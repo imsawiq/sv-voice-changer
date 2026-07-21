@@ -31,6 +31,6 @@ side = "CLIENT"
 [[dependencies.${id}]]
 modId = "voicechat"
 type = "required"
-versionRange = "[1,)"
+versionRange = "${voicechat}"
 ordering = "AFTER"
 side = "CLIENT"

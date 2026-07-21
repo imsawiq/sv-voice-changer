@@ -61,7 +61,8 @@ tasks {
             "name" to project.property("mod.name").toString(),
             "version" to project.property("mod.version").toString(),
             "description" to project.property("mod.description").toString(),
-            "minecraft" to project.property("mod.mc_compat").toString()
+            "minecraft" to project.property("mod.mc_compat").toString(),
+            "voicechat" to project.property("deps.voicechat_compat").toString()
         )
         inputs.properties(props)
         filesMatching("META-INF/neoforge.mods.toml") { expand(props) }

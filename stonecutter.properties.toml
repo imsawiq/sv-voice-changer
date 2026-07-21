@@ -14,12 +14,14 @@ mod.mc_releases = ["1.21", "1.21.1"]
 
 [fabric."1.21.1"]
 mod.mc_compat = ">=1.21 <=1.21.1"
+deps.voicechat_compat = ">=1.21-2.5.15"
 deps.fabric_api = "0.116.14+1.21.1"
 deps.voicechat = "fabric-1.21.1-2.6.21"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."1.21.1"]
 mod.mc_compat = "[1.21, 1.21.1]"
+deps.voicechat_compat = "[1.21-2.5.15,)"
 deps.neo_loader = "21.1.238"
 deps.voicechat = "neoforge-1.21.1-2.6.21"
 
@@ -28,11 +30,13 @@ mod.mc_releases = ["1.21.2"]
 
 [fabric."1.21.2"]
 mod.mc_compat = "1.21.2"
+deps.voicechat_compat = ">=1.21.2-2.5.24"
 deps.fabric_api = "0.106.1+1.21.2"
 deps.voicechat = "fabric-1.21.2-2.5.24"
 
 [neoforge."1.21.2"]
 mod.mc_compat = "[1.21.2]"
+deps.voicechat_compat = "[1.21.2-2.5.24,)"
 deps.neo_loader = "21.2.1-beta"
 deps.voicechat = "neoforge-1.21.2-2.5.24"
 
@@ -41,11 +45,13 @@ mod.mc_releases = ["1.21.3"]
 
 [fabric."1.21.3"]
 mod.mc_compat = "1.21.3"
+deps.voicechat_compat = ">=1.21.3-2.5.25"
 deps.fabric_api = "0.114.1+1.21.3"
 deps.voicechat = "fabric-1.21.3-2.5.31"
 
 [neoforge."1.21.3"]
 mod.mc_compat = "[1.21.3]"
+deps.voicechat_compat = "[1.21.3-2.5.25,)"
 deps.neo_loader = "21.3.97"
 deps.voicechat = "neoforge-1.21.3-2.5.31"
 
@@ -54,12 +60,14 @@ mod.mc_releases = ["1.21.4"]
 
 [fabric."1.21.4"]
 mod.mc_compat = "1.21.4"
+deps.voicechat_compat = ">=1.21.4-2.5.26"
 deps.fabric_api = "0.119.4+1.21.4"
 deps.voicechat = "fabric-1.21.4-2.6.21"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."1.21.4"]
 mod.mc_compat = "[1.21.4]"
+deps.voicechat_compat = "[1.21.4-2.5.26,)"
 deps.neo_loader = "21.4.157"
 deps.voicechat = "neoforge-1.21.4-2.6.21"
 
@@ -68,12 +76,14 @@ mod.mc_releases = ["1.21.5"]
 
 [fabric."1.21.5"]
 mod.mc_compat = "1.21.5"
+deps.voicechat_compat = ">=1.21.5-2.5.29"
 deps.fabric_api = "0.128.2+1.21.5"
 deps.voicechat = "fabric-1.21.5-2.6.21"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."1.21.5"]
 mod.mc_compat = "[1.21.5]"
+deps.voicechat_compat = "[1.21.5-2.5.29,)"
 deps.neo_loader = "21.5.98"
 deps.voicechat = "neoforge-1.21.5-2.6.21"
 
@@ -82,11 +92,13 @@ mod.mc_releases = ["1.21.6"]
 
 [fabric."1.21.6"]
 mod.mc_compat = "1.21.6"
+deps.voicechat_compat = ">=1.21.6-2.5.30"
 deps.fabric_api = "0.128.2+1.21.6"
 deps.voicechat = "fabric-1.21.6-2.5.32"
 
 [neoforge."1.21.6"]
 mod.mc_compat = "[1.21.6]"
+deps.voicechat_compat = "[1.21.6-2.5.30,)"
 deps.neo_loader = "21.6.20-beta"
 deps.voicechat = "neoforge-1.21.6-2.5.32"
 deps.voicechat_coordinate = "9eGKb6K1:DtuPswKw"
@@ -96,11 +108,13 @@ mod.mc_releases = ["1.21.7"]
 
 [fabric."1.21.7"]
 mod.mc_compat = "1.21.7"
+deps.voicechat_compat = ">=1.21.7-2.5.34"
 deps.fabric_api = "0.129.0+1.21.7"
 deps.voicechat = "fabric-1.21.7-2.5.34"
 
 [neoforge."1.21.7"]
 mod.mc_compat = "[1.21.7]"
+deps.voicechat_compat = "[1.21.7-2.5.34,)"
 deps.neo_loader = "21.7.25-beta"
 deps.voicechat = "neoforge-1.21.7-2.5.34"
 deps.voicechat_coordinate = "9eGKb6K1:cuBeZEHw"
@@ -110,12 +124,14 @@ mod.mc_releases = ["1.21.8"]
 
 [fabric."1.21.8"]
 mod.mc_compat = ">=1.21 <=1.21.8"
+deps.voicechat_compat = ">=1.21-2.5.15"
 deps.fabric_api = "0.136.1+1.21.8"
 deps.voicechat = "fabric-1.21.8-2.6.21"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."1.21.8"]
 mod.mc_compat = "[1.21, 1.21.8]"
+deps.voicechat_compat = "[1.21-2.5.15,)"
 deps.neo_loader = "21.8.54"
 deps.voicechat = "neoforge-1.21.8-2.6.21"
 
@@ -124,12 +140,14 @@ mod.mc_releases = ["1.21.9"]
 
 [fabric."1.21.9"]
 mod.mc_compat = "1.21.9"
+deps.voicechat_compat = ">=1.21.9-2.6.4"
 deps.fabric_api = "0.134.1+1.21.9"
 deps.voicechat = "fabric-1.21.9-2.6.4"
 deps.voicechat_stub = "2.6.0"
 
 [neoforge."1.21.9"]
 mod.mc_compat = "[1.21.9]"
+deps.voicechat_compat = "[1.21.9-2.6.4,)"
 deps.neo_loader = "21.9.16-beta"
 deps.voicechat = "neoforge-1.21.9-2.6.4"
 
@@ -138,12 +156,14 @@ mod.mc_releases = ["1.21.10"]
 
 [fabric."1.21.10"]
 mod.mc_compat = "1.21.10"
+deps.voicechat_compat = ">=1.21.10-2.6.6"
 deps.fabric_api = "0.138.4+1.21.10"
 deps.voicechat = "fabric-1.21.10-2.6.21"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."1.21.10"]
 mod.mc_compat = "[1.21.10]"
+deps.voicechat_compat = "[1.21.10-2.6.6,)"
 deps.neo_loader = "21.10.64"
 deps.voicechat = "neoforge-1.21.10-2.6.21"
 
@@ -152,12 +172,14 @@ mod.mc_releases = ["1.21.11"]
 
 [fabric."1.21.11"]
 mod.mc_compat = ">=1.21.9 <=1.21.11"
+deps.voicechat_compat = ">=1.21.9-2.6.4"
 deps.fabric_api = "0.141.5+1.21.11"
 deps.voicechat = "fabric-1.21.11-2.6.21"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."1.21.11"]
 mod.mc_compat = "[1.21.9, 1.21.11]"
+deps.voicechat_compat = "[1.21.9-2.6.4,)"
 deps.neo_loader = "21.11.44"
 deps.voicechat = "neoforge-1.21.11-2.6.21"
 
@@ -166,12 +188,14 @@ mod.mc_releases = ["26.1", "26.1.1", "26.1.2"]
 
 [fabric."26.1.x"]
 mod.mc_compat = ">=26.1 <=26.1.2"
+deps.voicechat_compat = ">=2.6.14"
 deps.fabric_api = "0.155.2+26.1.2"
 deps.voicechat = "fabric-2.6.21+26.1.2"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."26.1.x"]
 mod.mc_compat = "[26.1, 26.1.2]"
+deps.voicechat_compat = "[2.6.14,)"
 deps.neo_loader = "26.1.2.82"
 deps.voicechat = "neoforge-2.6.21+26.1.2"
 
@@ -180,11 +204,13 @@ mod.mc_releases = ["26.2"]
 
 [fabric."26.2.x"]
 mod.mc_compat = "~26.2"
+deps.voicechat_compat = ">=2.6.18"
 deps.fabric_api = "0.155.2+26.2"
 deps.voicechat = "fabric-2.6.21+26.2"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."26.2.x"]
 mod.mc_compat = "[26.2, 26.3)"
+deps.voicechat_compat = "[2.6.18,)"
 deps.neo_loader = "26.2.0.23-beta"
 deps.voicechat = "neoforge-2.6.21+26.2"
