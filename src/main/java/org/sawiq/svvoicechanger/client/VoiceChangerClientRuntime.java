@@ -10,9 +10,12 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
 import org.lwjgl.glfw.GLFW;
 import org.sawiq.svvoicechanger.SvVoiceChanger;
+import org.sawiq.svvoicechanger.client.ui.UpdateAvailableScreen;
 import org.sawiq.svvoicechanger.client.ui.VoiceChangerStudioScreen;
+import org.sawiq.svvoicechanger.client.update.ModrinthVersionChecker;
 
 public final class VoiceChangerClientRuntime {
     public static final VoiceChangerClientRuntime INSTANCE = new VoiceChangerClientRuntime();
@@ -20,8 +23,11 @@ public final class VoiceChangerClientRuntime {
     /*private static final KeyMapping.Category KEY_MAPPING_CATEGORY = registerKeyMappingCategory();
     *///?}
 
+    private final ModrinthVersionChecker versionChecker = new ModrinthVersionChecker();
     private KeyMapping toggleEffectKey;
     private KeyMapping openStudioKey;
+    private ModrinthVersionChecker.Result pendingUpdate;
+    private boolean updateScreenShown;
     private boolean initialized;
 
     private VoiceChangerClientRuntime() {
@@ -53,7 +59,7 @@ public final class VoiceChangerClientRuntime {
                 "category.svvoicechanger"
                 //?}
         );
-        verifyMixinTargets();
+        startUpdateCheck();
         this.initialized = true;
         SvVoiceChanger.LOGGER.info("Initialized Simple Voice Voice Changer client runtime");
     }
@@ -71,6 +77,7 @@ public final class VoiceChangerClientRuntime {
 
         VoiceChangerController controller = VoiceChangerController.INSTANCE;
         controller.tick();
+        maybeShowUpdateScreen(client);
 
         while (this.toggleEffectKey.consumeClick()) {
             if (MinecraftScreenAccess.current(client) == null) {
@@ -91,28 +98,52 @@ public final class VoiceChangerClientRuntime {
         }
 
         VoiceChangerController.INSTANCE.shutdown();
+        this.pendingUpdate = null;
+        this.updateScreenShown = false;
         this.initialized = false;
+    }
+
+    private void startUpdateCheck() {
+        this.versionChecker.checkAsync().thenAccept(result -> {
+            if (result == null) {
+                return;
+            }
+
+            Minecraft client = Minecraft.getInstance();
+            if (client == null) {
+                return;
+            }
+
+            client.execute(() -> this.pendingUpdate = result);
+        });
+    }
+
+    private void maybeShowUpdateScreen(Minecraft client) {
+        if (this.pendingUpdate == null || this.updateScreenShown) {
+            return;
+        }
+
+        if (!(MinecraftScreenAccess.current(client) instanceof TitleScreen titleScreen)) {
+            return;
+        }
+
+        this.updateScreenShown = true;
+        ModrinthVersionChecker.Result update = this.pendingUpdate;
+        this.pendingUpdate = null;
+        MinecraftScreenAccess.show(
+                client,
+                new UpdateAvailableScreen(
+                        titleScreen,
+                        update.version(),
+                        this.versionChecker.currentVersion(),
+                        update.url()
+                )
+        );
     }
 
     private void requireInitialized() {
         if (!this.initialized) {
             throw new IllegalStateException("Voice changer client runtime is not initialized");
-        }
-    }
-
-    private static void verifyMixinTargets() {
-        ClassLoader classLoader = VoiceChangerClientRuntime.class.getClassLoader();
-        String[] targetClasses = {
-                "de.maxhenkel.voicechat.gui.VoiceChatScreen",
-                "de.maxhenkel.voicechat.voice.client.MicThread",
-                "de.maxhenkel.voicechat.voice.client.RenderEvents"
-        };
-        for (String targetClass : targetClasses) {
-            try {
-                Class.forName(targetClass, false, classLoader);
-            } catch (ClassNotFoundException exception) {
-                throw new IllegalStateException("Required Simple Voice Chat class is unavailable: " + targetClass, exception);
-            }
         }
     }
 

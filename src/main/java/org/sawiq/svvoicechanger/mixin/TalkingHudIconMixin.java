@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 @Mixin(RenderEvents.class)
 public abstract class TalkingHudIconMixin {
     @Unique
+    private static boolean svvoicechanger$hasLoggedIconFailure;
+    @Unique
     private static final String RENDER_ICON_TARGET =
             //? if >=26.1 {
             /*"Lde/maxhenkel/voicechat/voice/client/RenderEvents;renderIcon"
@@ -42,6 +44,7 @@ public abstract class TalkingHudIconMixin {
 
     @ModifyArgs(
             method = "onRenderHUD",
+            require = 0,
             at = @At(
                     value = "INVOKE",
                     target = RENDER_ICON_TARGET
@@ -66,10 +69,20 @@ public abstract class TalkingHudIconMixin {
             return;
         }
 
-        arguments.set(1, MinecraftResourceAccess.create(
-                icon.getClass(),
-                SvVoiceChanger.MOD_ID,
-                replacementPath
-        ));
+        try {
+            arguments.set(1, MinecraftResourceAccess.create(
+                    icon.getClass(),
+                    SvVoiceChanger.MOD_ID,
+                    replacementPath
+            ));
+        } catch (RuntimeException exception) {
+            if (!svvoicechanger$hasLoggedIconFailure) {
+                svvoicechanger$hasLoggedIconFailure = true;
+                SvVoiceChanger.LOGGER.error(
+                        "Unable to replace the talking HUD icon; keeping the Simple Voice Chat icon",
+                        exception
+                );
+            }
+        }
     }
 }

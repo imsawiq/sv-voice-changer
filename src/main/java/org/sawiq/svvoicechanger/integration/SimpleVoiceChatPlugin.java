@@ -33,6 +33,18 @@ public final class SimpleVoiceChatPlugin implements VoicechatPlugin {
     }
 
     private void onClientSound(ClientSoundEvent event) {
+        try {
+            processClientSound(event);
+        } catch (RuntimeException exception) {
+            this.audioProcessor.reset();
+            SvVoiceChanger.LOGGER.error(
+                    "Voice changer audio processing failed; sending the original microphone frame",
+                    exception
+            );
+        }
+    }
+
+    private void processClientSound(ClientSoundEvent event) {
         VoiceChangerController controller = VoiceChangerController.INSTANCE;
         if (!controller.isInitialized()) {
             return;

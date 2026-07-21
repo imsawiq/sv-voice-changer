@@ -1,5 +1,5 @@
 {
-  "required": true,
+  "required": false,
   "minVersion": "0.8",
   "package": "org.sawiq.svvoicechanger.mixin",
   "compatibilityLevel": "${java}",
@@ -9,7 +9,7 @@
     "VoiceChatScreenMixin"
   ],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   },
   "overwrites": {
     "requireAnnotations": true

@@ -3,6 +3,7 @@ package org.sawiq.svvoicechanger.mixin;
 import de.maxhenkel.voicechat.gui.VoiceChatSettingsScreen;
 import de.maxhenkel.voicechat.voice.client.MicThread;
 import net.minecraft.client.Minecraft;
+import org.sawiq.svvoicechanger.SvVoiceChanger;
 import org.sawiq.svvoicechanger.client.MinecraftScreenAccess;
 import org.sawiq.svvoicechanger.client.VoiceChangerController;
 import org.sawiq.svvoicechanger.client.audio.SimpleVoiceChatAudioProcessor;
@@ -21,6 +22,8 @@ public abstract class MicThreadMixin {
     private static long activeMicTestThreadId = -1L;
     @Unique
     private static final boolean HAS_PROCESSED_AUDIO_METHOD = hasProcessedAudioMethod();
+    @Unique
+    private static boolean hasLoggedMicTestFailure;
 
     @Inject(method = "pollProcessedAudio", at = @At("RETURN"), cancellable = true, require = 0)
     private void svvoicechanger$processMicTestAudio(
@@ -61,8 +64,19 @@ public abstract class MicThreadMixin {
             activeMicTestThreadId = currentThreadId;
         }
 
-        MIC_TEST_PROCESSOR.process(samples, controller);
-        callbackInfo.setReturnValue(samples);
+        try {
+            MIC_TEST_PROCESSOR.process(samples, controller);
+            callbackInfo.setReturnValue(samples);
+        } catch (RuntimeException exception) {
+            MIC_TEST_PROCESSOR.reset();
+            if (!hasLoggedMicTestFailure) {
+                hasLoggedMicTestFailure = true;
+                SvVoiceChanger.LOGGER.error(
+                        "Voice changer microphone test failed; keeping the original microphone audio",
+                        exception
+                );
+            }
+        }
     }
 
     @Unique

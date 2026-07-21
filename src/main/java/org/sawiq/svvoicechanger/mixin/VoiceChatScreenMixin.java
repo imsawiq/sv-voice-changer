@@ -15,34 +15,45 @@ import org.sawiq.svvoicechanger.client.MinecraftScreenAccess;
 import org.sawiq.svvoicechanger.client.MinecraftResourceAccess;
 import org.sawiq.svvoicechanger.client.ui.VoiceChangerStudioScreen;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(VoiceChatScreen.class)
 public abstract class VoiceChatScreenMixin extends Screen {
+    @Unique
     private static final int VOICE_CHAT_SCREEN_WIDTH = 195;
+    @Unique
     private static final String STUDIO_BUTTON_SPRITE = "icons/micro";
 
     protected VoiceChatScreenMixin(Component title) {
         super(title);
     }
 
-    @Inject(method = "init", at = @At("TAIL"))
+    @Inject(method = "init", at = @At("TAIL"), require = 0)
     private void svvoicechanger$addStudioButton(CallbackInfo callbackInfo) {
-        VoiceChatScreenBase voiceChatScreen = (VoiceChatScreenBase) (Object) this;
-        int x = voiceChatScreen.getGuiLeft() + (VOICE_CHAT_SCREEN_WIDTH - 20) / 2;
-        int y = voiceChatScreen.getGuiTop() + 21;
+        try {
+            VoiceChatScreenBase voiceChatScreen = (VoiceChatScreenBase) (Object) this;
+            int x = voiceChatScreen.getGuiLeft() + (VOICE_CHAT_SCREEN_WIDTH - 20) / 2;
+            int y = voiceChatScreen.getGuiTop() + 21;
 
-        ImageButton studioButton = createStudioButton(x, y);
-        if (studioButton == null) {
-            return;
+            ImageButton studioButton = svvoicechanger$createStudioButton(x, y);
+            if (studioButton == null) {
+                return;
+            }
+            studioButton.setTooltip(Tooltip.create(Component.translatable("svvoicechanger.menu.open_studio")));
+            this.addRenderableWidget(studioButton);
+        } catch (RuntimeException exception) {
+            SvVoiceChanger.LOGGER.error(
+                    "Unable to add the voice changer button; keeping the Simple Voice Chat screen usable",
+                    exception
+            );
         }
-        studioButton.setTooltip(Tooltip.create(Component.translatable("svvoicechanger.menu.open_studio")));
-        this.addRenderableWidget(studioButton);
     }
 
-    private ImageButton createStudioButton(int x, int y) {
+    @Unique
+    private ImageButton svvoicechanger$createStudioButton(int x, int y) {
         for (Constructor<?> constructor : ImageButton.class.getDeclaredConstructors()) {
             Class<?>[] parameters = constructor.getParameterTypes();
             if (parameters.length != 4
