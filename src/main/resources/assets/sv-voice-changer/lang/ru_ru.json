@@ -122,7 +122,8 @@
   "svvoicechanger.update.title": "Обновление Simple Voice Voice Changer",
   "svvoicechanger.update.subtitle": "Доступна новая версия: %s",
   "svvoicechanger.update.current": "Текущая версия: %s",
-  "svvoicechanger.update.open_page": "Открыть страницу Modrinth",
+  "svvoicechanger.update.open_modrinth": "Скачать с Modrinth",
+  "svvoicechanger.update.open_curseforge": "Скачать с CurseForge",
   "svvoicechanger.update.dismiss": "Закрыть"
 }
 

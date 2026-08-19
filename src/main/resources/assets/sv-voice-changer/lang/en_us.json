@@ -122,7 +122,8 @@
   "svvoicechanger.update.title": "Simple Voice Voice Changer Update",
   "svvoicechanger.update.subtitle": "New version available: %s",
   "svvoicechanger.update.current": "Current version: %s",
-  "svvoicechanger.update.open_page": "Open Modrinth Page",
+  "svvoicechanger.update.open_modrinth": "Download from Modrinth",
+  "svvoicechanger.update.open_curseforge": "Download from CurseForge",
   "svvoicechanger.update.dismiss": "Dismiss"
 }
 

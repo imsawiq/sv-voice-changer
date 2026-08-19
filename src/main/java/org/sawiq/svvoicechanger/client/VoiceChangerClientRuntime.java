@@ -136,7 +136,8 @@ public final class VoiceChangerClientRuntime {
                         titleScreen,
                         update.version(),
                         this.versionChecker.currentVersion(),
-                        update.url()
+                        update.url(),
+                        update.curseForgeUrl()
                 )
         );
     }

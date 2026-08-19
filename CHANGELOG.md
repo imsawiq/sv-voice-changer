@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+### EN
+
+- Added a CurseForge download button to the update screen alongside the existing Modrinth one. Update checks still run against the Modrinth API.
+
+### RU
+
+- В экран обновления добавлена кнопка скачивания с CurseForge рядом с Modrinth. Проверка обновлений по-прежнему идёт через Modrinth API.
+
 ## 1.0.1
 
 ### EN

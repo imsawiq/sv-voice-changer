@@ -17,13 +17,21 @@ public final class UpdateAvailableScreen extends Screen {
     private final String newVersion;
     private final String currentVersion;
     private final String url;
+    private final String curseForgeUrl;
 
-    public UpdateAvailableScreen(Screen parent, String newVersion, String currentVersion, String url) {
+    public UpdateAvailableScreen(
+            Screen parent,
+            String newVersion,
+            String currentVersion,
+            String url,
+            String curseForgeUrl
+    ) {
         super(Component.translatable("svvoicechanger.update.title"));
         this.parent = parent;
         this.newVersion = newVersion;
         this.currentVersion = currentVersion;
         this.url = url;
+        this.curseForgeUrl = curseForgeUrl;
     }
 
     @Override
@@ -45,12 +53,16 @@ public final class UpdateAvailableScreen extends Screen {
                 280
         );
 
-        addRenderableWidget(Button.builder(Component.translatable("svvoicechanger.update.open_page"), button -> openPage())
+        addRenderableWidget(Button.builder(Component.translatable("svvoicechanger.update.open_modrinth"), button -> openPage(this.url))
                 .bounds(centerX - 100, centerY + 24, 200, 20)
                 .build());
 
-        addRenderableWidget(Button.builder(Component.translatable("svvoicechanger.update.dismiss"), button -> onClose())
+        addRenderableWidget(Button.builder(Component.translatable("svvoicechanger.update.open_curseforge"), button -> openPage(this.curseForgeUrl))
                 .bounds(centerX - 100, centerY + 50, 200, 20)
+                .build());
+
+        addRenderableWidget(Button.builder(Component.translatable("svvoicechanger.update.dismiss"), button -> onClose())
+                .bounds(centerX - 100, centerY + 76, 200, 20)
                 .build());
     }
 
@@ -71,11 +83,11 @@ public final class UpdateAvailableScreen extends Screen {
         addRenderableWidget(label);
     }
 
-    private void openPage() {
+    private void openPage(String target) {
         try {
-            Desktop.getDesktop().browse(URI.create(this.url));
+            Desktop.getDesktop().browse(URI.create(target));
         } catch (Exception exception) {
-            SvVoiceChanger.LOGGER.warn("Unable to open the Modrinth update page", exception);
+            SvVoiceChanger.LOGGER.warn("Unable to open the update download page {}", target, exception);
         }
     }
 }

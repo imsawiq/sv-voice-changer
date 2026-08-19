@@ -21,6 +21,7 @@ import org.sawiq.svvoicechanger.SvVoiceChanger;
 public final class ModrinthVersionChecker {
     private static final String MODRINTH_API = "https://api.modrinth.com/v2/project/simple-voice-voice-changer/version";
     private static final String MODRINTH_PAGE = "https://modrinth.com/mod/simple-voice-voice-changer";
+    private static final String CURSEFORGE_PAGE = "https://www.curseforge.com/minecraft/mc-mods/simple-voice-voice-changer";
     private static final int CONNECT_TIMEOUT_MS = 10000;
     private static final int READ_TIMEOUT_MS = 10000;
 
@@ -96,7 +97,7 @@ public final class ModrinthVersionChecker {
                         ? latest.get("version_number").getAsString()
                         : "unknown";
                 if (isNewer(latestVersion, this.currentVersion)) {
-                    return new Result(latestVersion, MODRINTH_PAGE);
+                    return new Result(latestVersion, MODRINTH_PAGE, CURSEFORGE_PAGE);
                 }
 
                 return null;
@@ -218,6 +219,6 @@ public final class ModrinthVersionChecker {
         }
     }
 
-    public record Result(String version, String url) {
+    public record Result(String version, String url, String curseForgeUrl) {
     }
 }
