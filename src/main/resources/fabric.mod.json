@@ -12,8 +12,11 @@
   },
   "license": "CC-BY-NC-SA-4.0",
   "icon": "assets/sv-voice-changer/icon.png",
-  "environment": "client",
+  "environment": "*",
   "entrypoints": {
+    "main": [
+      "org.sawiq.svvoicechanger.SvVoiceChangerFabricMain"
+    ],
     "client": [
       "org.sawiq.svvoicechanger.client.SvVoiceChangerFabric"
     ],

@@ -22,5 +22,10 @@ stonecutter parameters {
             replace("registerKeyBinding", "registerKeyMapping")
             replace("GuiGraphics", "GuiGraphicsExtractor")
         }
+
+        // Renamed a release earlier than the rest of the 26 changes.
+        string(current.parsed >= "1.21.11") {
+            replace("ResourceLocation", "Identifier")
+        }
     }
 }

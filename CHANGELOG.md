@@ -1,5 +1,65 @@
 # Changelog
 
+## 1.2.0
+
+### EN
+
+- **Minecraft 26.3**, on Fabric and NeoForge. Mojang replaced GLFW with SDL in
+  that release, which renamed the key-type constant and changed every key code
+  behind it, so the hotkeys now take their codes from Minecraft's own table
+  instead of from GLFW — the right place for them on every version.
+- **New audio engine**, brought over from the Plasmo Voice build. Pitch and
+  formant are now shifted separately by a phase vocoder, so raising a voice
+  makes it sound like a different person rather than a chipmunk. All presets
+  were rebuilt on it, and a Batman voice was added.
+- **An API for other mods** (`org.sawiq.svvoicechanger.client.api`, inside the
+  mod jar). A radio, a mask or a machine can apply a voice for as long as it
+  needs one and hand it back, without touching what the player chose and
+  without having to save and restore their settings. Mods can also add their
+  own voices to the studio and follow what the player is doing. See
+  `docs/API.md`.
+- **Server side.** The mod now installs on a server as well. A config decides
+  whether the voice changer may be used there, `/svvoicechanger` mutes and
+  unmutes individual players, and on NeoForge the permission nodes go through
+  the loader's own permission API. Worth being clear: the voice is changed on
+  the speaker's machine before it is sent, so this is a policy an unmodified
+  client obeys, not something a server can enforce.
+- **Servers can limit hand tuning.** `allowed-voices` in the server config, or
+  `/svvoicechanger restrict`, narrows players to ready-made voices or to the
+  server's own voices only.
+- **Servers can share voices.** Preset files dropped into the server's
+  `shared-voices` folder appear in every player's studio while they are connected.
+  Only numbers are read from those files and every value is clamped to its own
+  range, so a server cannot use this to make a client load or run anything.
+
+### RU
+
+- **Minecraft 26.3**, на Fabric и NeoForge. В этой версии Mojang заменил GLFW
+  на SDL: константа типа клавиши переименовалась, а коды клавиш поменяли
+  значения. Горячие клавиши теперь берут коды из таблицы самого Minecraft, а
+  не из GLFW — так и должно было быть на любой версии.
+- **Новый звуковой движок**, перенесён из версии для Plasmo Voice. Высота и
+  форманты теперь двигаются раздельно через фазовый вокодер, поэтому поднятый
+  голос звучит как другой человек, а не как бурундук. Все пресеты пересобраны
+  заново, добавлен голос Бэтмена.
+- **API для других модов** (`org.sawiq.svvoicechanger.client.api`, внутри
+  джарника). Рация, маска или машина могут подменить голос на нужное время и
+  вернуть обратно, не трогая выбор игрока и не сохраняя его настройки вручную.
+  Моды также могут добавлять свои голоса в студию. См. `docs/API.md`.
+- **Серверная часть.** Мод теперь ставится и на сервер. Конфиг решает, можно
+  ли менять голос, `/svvoicechanger` мутит и размучивает игроков, а на
+  NeoForge права идут через встроенное в лоадер permission API. Важно: голос
+  меняется на машине говорящего до отправки, поэтому это политика, которой
+  подчиняется честный клиент, а не то, что сервер может проконтролировать.
+- **Сервер может запретить ручную настройку.** `allowed-voices` в серверном
+  конфиге или `/svvoicechanger restrict` оставляет игрокам только готовые
+  голоса или только голоса сервера.
+- **Сервер может раздавать голоса.** Файлы пресетов, положенные в серверную
+  папку `shared-voices`, появляются в студии у всех, кто подключён. Из этих файлов
+  читаются только числа, и каждое значение ограничено своим диапазоном, так
+  что сервер не может через это заставить клиент что-то загрузить или
+  выполнить.
+
 ## 1.1.0
 
 ### EN

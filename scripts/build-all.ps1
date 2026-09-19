@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Versions = @("1.21.8", "1.21.11", "26.1.x", "26.2.x")
+$Versions = @("1.21.8", "1.21.11", "26.1.x", "26.2.x", "26.3.x")
 $Loaders = @("fabric", "neoforge")
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Dist = Join-Path $Root "dist"

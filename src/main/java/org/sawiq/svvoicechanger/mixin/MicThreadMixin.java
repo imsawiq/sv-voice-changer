@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MicThreadMixin {
     @Unique
     private static final SimpleVoiceChatAudioProcessor MIC_TEST_PROCESSOR =
-            new SimpleVoiceChatAudioProcessor();
+            SimpleVoiceChatAudioProcessor.forMicrophoneTest();
     @Unique
     private static long activeMicTestThreadId = -1L;
     @Unique

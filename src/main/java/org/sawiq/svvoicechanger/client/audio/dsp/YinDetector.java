@@ -107,4 +107,3 @@ public final class YinDetector {
         return sampleRate / betterTau;
     }
 }
-

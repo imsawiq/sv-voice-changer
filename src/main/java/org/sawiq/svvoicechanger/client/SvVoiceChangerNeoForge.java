@@ -10,12 +10,15 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.sawiq.svvoicechanger.SvVoiceChanger;
+import org.sawiq.svvoicechanger.client.server.ClientVoiceChannel;
 
 @Mod(value = SvVoiceChanger.NEOFORGE_MOD_ID, dist = Dist.CLIENT)
 public final class SvVoiceChangerNeoForge {
     public SvVoiceChangerNeoForge(IEventBus modEventBus) {
         VoiceChangerClientRuntime runtime = VoiceChangerClientRuntime.INSTANCE;
         runtime.initialize(FMLPaths.CONFIGDIR.get());
+        ClientVoiceChannel.initialize(payload ->
+                VoiceChangerController.INSTANCE.serverSession().receive(payload));
         modEventBus.addListener(this::registerKeyMappings);
         NeoForge.EVENT_BUS.addListener(this::onClientTick);
     }

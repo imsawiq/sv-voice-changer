@@ -52,7 +52,7 @@ public abstract class TalkingHudIconMixin {
     )
     private void svvoicechanger$replaceTalkingIcon(Args arguments) {
         VoiceChangerController controller = VoiceChangerController.INSTANCE;
-        if (!controller.isInitialized() || !controller.isEffectEnabled()) {
+        if (!controller.isInitialized() || !controller.isEffectActive()) {
             return;
         }
 

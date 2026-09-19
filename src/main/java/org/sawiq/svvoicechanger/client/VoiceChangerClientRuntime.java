@@ -11,7 +11,6 @@ import java.util.function.Consumer;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
-import org.lwjgl.glfw.GLFW;
 import org.sawiq.svvoicechanger.SvVoiceChanger;
 import org.sawiq.svvoicechanger.client.ui.UpdateAvailableScreen;
 import org.sawiq.svvoicechanger.client.ui.VoiceChangerStudioScreen;
@@ -33,6 +32,20 @@ public final class VoiceChangerClientRuntime {
     private VoiceChangerClientRuntime() {
     }
 
+    /**
+     * Minecraft 26.3 replaced GLFW with SDL, which renamed this constant and
+     * changed every key code behind it. Taking the codes from Minecraft's own
+     * table rather than from a windowing library keeps them right on both
+     * sides of that change; only the name of the type needs saying twice.
+     */
+    private static InputConstants.Type keyboardType() {
+        //? if >=26.3 {
+        /*return InputConstants.Type.KEYBOARD;
+        *///?} else {
+        return InputConstants.Type.KEYSYM;
+        //?}
+    }
+
     public void initialize(Path configDirectory) {
         if (this.initialized) {
             return;
@@ -41,8 +54,8 @@ public final class VoiceChangerClientRuntime {
         VoiceChangerController.INSTANCE.initialize(configDirectory);
         this.toggleEffectKey = new KeyMapping(
                 "key.svvoicechanger.toggle",
-                InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_J,
+                keyboardType(),
+                InputConstants.KEY_J,
                 //? if >=1.21.9 {
                 /*KEY_MAPPING_CATEGORY
                 *///?} else {
@@ -51,8 +64,8 @@ public final class VoiceChangerClientRuntime {
         );
         this.openStudioKey = new KeyMapping(
                 "key.svvoicechanger.open_studio",
-                InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_UNKNOWN,
+                keyboardType(),
+                InputConstants.UNKNOWN.getValue(),
                 //? if >=1.21.9 {
                 /*KEY_MAPPING_CATEGORY
                 *///?} else {

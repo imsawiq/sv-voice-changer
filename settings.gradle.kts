@@ -36,6 +36,7 @@ stonecutter {
         target("1.21.11")
         target("26.1.x", "26.1.2")
         target("26.2.x", "26.2")
+        target("26.3.x", "26.3")
 
         vcsVersion = "1.21.8-fabric"
     }
