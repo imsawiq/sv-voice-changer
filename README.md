@@ -48,6 +48,43 @@ Use the Simple Voice Chat file made for your exact Minecraft version. The table 
 
 These minimums apply to both Fabric and NeoForge. Version 1.2.0 compiles on all 28 configured Fabric and NeoForge targets, and ships one jar per Minecraft range. Integrations fail open: if an optional SVC screen or HUD hook changes, the voice chat itself remains available.
 
+### 🎮 Getting started
+
+1. Install **Simple Voice Chat** and this mod on your client. On Fabric you also need **Fabric API**.
+2. Open the Simple Voice Chat menu and press the **voice changer button** at the top.
+3. Pick a voice from the grid and set the strength. **Self Listen** plays your own processed voice back so you can hear what everyone else hears.
+4. **J** switches the effect on and off without opening anything. There is a second, unbound key for opening the studio directly; both are in Minecraft's controls.
+
+Nothing here needs a server: on a server without the mod, everything except the server policy still works.
+
+
+### 🛠️ For server operators
+
+Install the mod on the server as well. It writes `config/sv-voice-changer/server.properties` on first start, with every key documented inside the file.
+
+Worth being clear first: the voice is changed on the speaker's own machine before it is sent. Everything below is a policy an unmodified client obeys, not something a server can enforce.
+
+**Commands** - `/svvoicechanger`, or `/svc` for short. Operators only by default.
+
+| Command | What it does |
+|---|---|
+| `status` | Current policy, how many players are muted, how many voices are shared |
+| `on` / `off` | Allows or denies the voice changer for everyone here |
+| `restrict <all\|presets\|server-only>` | How much freedom players have over their voice |
+| `mute <player>` / `unmute <player>` | Switches one player's voice changer off, and back on |
+| `mutelist` | Who is currently muted |
+| `voices` | The voices this server shares |
+| `reload` | Re-reads the config, the mute list and the shared voices |
+
+**Restrictions** - `all` lets players tune freely. `presets` allows ready-made voices only: built-in, added by another mod, or shared by this server; no hand tuning and no personal preset files. `server-only` allows nothing but the voices this server shares. A voice another mod is holding, such as a radio, is never affected.
+
+**Permissions** - on NeoForge, `sv-voice-changer:use` decides who may change their voice and `sv-voice-changer:command` who may run the command, so any permission manager can pick them up. Fabric has no equivalent permission API, so nobody is refused on that ground there and the mute list is what a moderator uses instead.
+
+**Sharing your own voices** - save a voice in the studio, press **Open Folder**, copy the file into `config/sv-voice-changer/shared-voices/` on the server, then run `/svvoicechanger reload`. It appears in every connected player's studio and disappears when they leave. Only numbers are read from those files and every value is clamped to its own range, so this cannot make a client load or run anything.
+
+The full reference, including the API for other mods, is in [docs/API.md](docs/API.md).
+
+
 ### 🔗 Links
 
 - **GitHub:** [imsawiq/sv-voice-changer](https://github.com/imsawiq/sv-voice-changer)
@@ -99,6 +136,43 @@ These minimums apply to both Fabric and NeoForge. Version 1.2.0 compiles on all 
 | 26.3 | 2.6.23 |
 
 Минимумы одинаковы для Fabric и NeoForge. Версия мода 1.2.0 собирается на всех 28 настроенных таргетах Fabric и NeoForge; на каждый диапазон версий Minecraft выходит свой jar. Интеграции работают по принципу fail-open: если необязательный хук экрана или HUD изменится, сам голосовой чат останется доступен.
+
+### 🎮 С чего начать
+
+1. Поставь **Simple Voice Chat** и этот мод на клиент. На Fabric нужен ещё **Fabric API**.
+2. Открой меню Simple Voice Chat и нажми **кнопку войсченджера** сверху.
+3. Выбери голос из сетки и задай силу. **Self Listen** проигрывает тебе твой же обработанный голос — слышно ровно то, что слышат другие.
+4. **J** включает и выключает эффект, ничего не открывая. Есть и вторая клавиша, для открытия студии напрямую, — по умолчанию не назначена; обе лежат в управлении Minecraft.
+
+Сервер для этого не нужен: на сервере без мода работает всё, кроме серверных правил.
+
+
+### 🛠️ Для владельцев серверов
+
+Поставь мод и на сервер. При первом запуске он создаст `config/sv-voice-changer/server.properties`, где каждый ключ описан прямо в файле.
+
+Сразу честно: голос меняется на машине говорящего до отправки. Всё ниже — правило, которому следует неизменённый клиент, а не то, что сервер может навязать.
+
+**Команды** — `/svvoicechanger`, коротко `/svc`. По умолчанию только для операторов.
+
+| Команда | Что делает |
+|---|---|
+| `status` | Текущие правила, сколько игроков заглушено, сколько голосов раздаётся |
+| `on` / `off` | Разрешает или запрещает войсченджер всем здесь |
+| `restrict <all\|presets\|server-only>` | Насколько свободно игроки распоряжаются голосом |
+| `mute <игрок>` / `unmute <игрок>` | Выключает войсченджер одному игроку и включает обратно |
+| `mutelist` | Кто сейчас заглушён |
+| `voices` | Голоса, которые раздаёт этот сервер |
+| `reload` | Перечитывает конфиг, список мутов и раздаваемые голоса |
+
+**Ограничения** — `all` разрешает настраивать что угодно. `presets` оставляет только готовые голоса: встроенные, добавленные другим модом или раздаваемые сервером; ручной настройки и личных файлов пресетов нет. `server-only` — только голоса этого сервера. Голос, который держит другой мод, например рация, под ограничения не попадает никогда.
+
+**Права** — на NeoForge `sv-voice-changer:use` решает, кому можно менять голос, а `sv-voice-changer:command` — кому можно выполнять команду; их подхватит любой менеджер прав. На Fabric такого API нет, поэтому по этому признаку там никому не отказывают, и модератор пользуется списком мутов.
+
+**Раздача своих голосов** — сохрани голос в студии, нажми **Открыть папку**, скопируй файл в `config/sv-voice-changer/shared-voices/` на сервере и выполни `/svvoicechanger reload`. Он появится в студии у всех подключённых и пропадёт, когда они выйдут. Из этих файлов читаются только числа, и каждое значение ограничено своим диапазоном, так что заставить клиент что-то загрузить или выполнить через это нельзя.
+
+Полный справочник, включая API для других модов, — в [docs/API.md](docs/API.md).
+
 
 ### 🔗 Ссылки
 
