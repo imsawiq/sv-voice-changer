@@ -4,6 +4,7 @@ import de.maxhenkel.voicechat.gui.VoiceChatScreen;
 import de.maxhenkel.voicechat.gui.VoiceChatScreenBase;
 import de.maxhenkel.voicechat.gui.widgets.ImageButton;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Tooltip;
@@ -24,8 +25,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class VoiceChatScreenMixin extends Screen {
     @Unique
     private static final int VOICE_CHAT_SCREEN_WIDTH = 195;
+    /**
+     * Simple Voice Chat refers to its icons in two different ways depending on
+     * its generation: 2.5.x blits a texture path, while 2.6.x registers the
+     * icons folder as a GUI atlas source and blits a sprite id. Passing the
+     * wrong one draws the missing-texture checkerboard, so the form is taken
+     * from a button Simple Voice Chat built itself rather than assumed.
+     */
     @Unique
     private static final String STUDIO_BUTTON_SPRITE = "icons/micro";
+    @Unique
+    private static final String STUDIO_BUTTON_TEXTURE = "textures/icons/micro.png";
 
     protected VoiceChatScreenMixin(Component title) {
         super(title);
@@ -42,7 +52,15 @@ public abstract class VoiceChatScreenMixin extends Screen {
             if (studioButton == null) {
                 return;
             }
-            studioButton.setTooltip(Tooltip.create(Component.translatable("svvoicechanger.menu.open_studio")));
+            // Says why when a server has the voice changer off, so the reason
+            // is readable from the voice chat screen itself rather than only
+            // after opening the studio.
+            VoiceChangerController controller = VoiceChangerController.INSTANCE;
+            studioButton.setTooltip(Tooltip.create(
+                    controller.isInitialized() && !controller.isAllowedByServer()
+                            ? Component.translatable("svvoicechanger.studio.server_blocked",
+                                    Component.translatable(controller.getServerDenialReason().translationKey()))
+                            : Component.translatable("svvoicechanger.menu.open_studio")));
             this.addRenderableWidget(studioButton);
         } catch (RuntimeException exception) {
             SvVoiceChanger.LOGGER.error(
@@ -50,6 +68,39 @@ public abstract class VoiceChatScreenMixin extends Screen {
                     exception
             );
         }
+    }
+
+    /**
+     * Which of the two icon forms this build of Simple Voice Chat understands.
+     *
+     * <p>Read off one of its own buttons: whatever it is drawing for itself is
+     * by definition the form its {@code ImageButton} can render. Falls back to
+     * the sprite form, which is what every currently supported release uses,
+     * when the screen happens to carry no button of its own.</p>
+     */
+    @Unique
+    private String svvoicechanger$iconReference() {
+        for (Object child : this.children()) {
+            if (!(child instanceof ImageButton button)) {
+                continue;
+            }
+
+            try {
+                Field textureField = ImageButton.class.getDeclaredField("texture");
+                textureField.trySetAccessible();
+                Object texture = textureField.get(button);
+                if (texture != null) {
+                    return String.valueOf(texture).contains("textures/")
+                            ? STUDIO_BUTTON_TEXTURE
+                            : STUDIO_BUTTON_SPRITE;
+                }
+            } catch (NoSuchFieldException | IllegalAccessException | RuntimeException exception) {
+                SvVoiceChanger.LOGGER.debug("Could not read a Simple Voice Chat icon reference", exception);
+                break;
+            }
+        }
+
+        return STUDIO_BUTTON_SPRITE;
     }
 
     @Unique
@@ -66,7 +117,7 @@ public abstract class VoiceChatScreenMixin extends Screen {
             Object icon = MinecraftResourceAccess.create(
                     parameters[2],
                     SvVoiceChanger.MOD_ID,
-                    STUDIO_BUTTON_SPRITE
+                    svvoicechanger$iconReference()
             );
             ImageButton.PressAction action = button -> MinecraftScreenAccess.show(
                     Minecraft.getInstance(),

@@ -32,6 +32,16 @@
   Only numbers are read from those files and every value is clamped to its own
   range, so a server cannot use this to make a client load or run anything.
 
+#### Fixed
+- **The studio button in the Simple Voice Chat menu draws its icon again.**
+  Simple Voice Chat refers to its icons one way in 2.5.x and another from
+  2.6.x on, and the button only ever used the newer form, so on the older
+  releases it drew the missing-texture checkerboard. It now takes the form
+  from a button Simple Voice Chat built itself, which is the one its renderer
+  is guaranteed to accept.
+- **The update notice says which mod it is about.** It carried the Plasmo
+  Voice build's name.
+
 ### RU
 
 - **Minecraft 26.3**, на Fabric и NeoForge. В этой версии Mojang заменил GLFW
@@ -59,6 +69,15 @@
   читаются только числа, и каждое значение ограничено своим диапазоном, так
   что сервер не может через это заставить клиент что-то загрузить или
   выполнить.
+
+#### Исправлено
+- **Кнопка студии в меню Simple Voice Chat снова рисует иконку.** В 2.5.x
+  Simple Voice Chat ссылается на иконки одним способом, а начиная с 2.6.x -
+  другим; кнопка всегда использовала только новый, поэтому на старых версиях
+  вместо иконки была фиолетовая клетка. Теперь форма берётся с кнопки, которую
+  сделал сам Simple Voice Chat, - её его отрисовщик точно принимает.
+- **В уведомлении об обновлении теперь правильное название мода.** Там стояло
+  название версии для Plasmo Voice.
 
 ## 1.1.0
 

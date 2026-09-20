@@ -314,8 +314,8 @@ public final class VoiceChangerStudioScreen extends Screen {
 
         this.enabledButton = addScrollable(Button.builder(enabledButtonText(), button -> toggleEnabled())
                 .bounds(left, top, half, WIDGET_HEIGHT).build());
-        this.selfListenButton = addScrollable(Button.builder(selfListenButtonText(), button -> toggleSelfListen())
-                .bounds(left + half + COLUMN_GAP, top, half, WIDGET_HEIGHT).build());
+        this.selfListenButton = addScrollable(withTooltip(Button.builder(selfListenButtonText(), button -> toggleSelfListen())
+                .bounds(left + half + COLUMN_GAP, top, half, WIDGET_HEIGHT).build(), "svvoicechanger.studio.self_listen.desc"));
 
         int presetsTop = top + WIDGET_HEIGHT + METER_BLOCK_HEIGHT;
         int presetRow = buildPresetGrid(left, presetsTop, fullWidth);
@@ -325,14 +325,15 @@ public final class VoiceChangerStudioScreen extends Screen {
                 this.controller::getStrength, this.controller::setStrength));
 
         int libraryRow = presetRow + ROW_HEIGHT + 4;
-        this.savedPresetButton = addScrollable(libraryWidget(
+        this.savedPresetButton = addScrollable(libraryWidget(withTooltip(
                 Button.builder(savedPresetButtonText(), button -> cycleSavedPreset())
-                        .bounds(left, libraryRow, half, WIDGET_HEIGHT).build()));
-        addScrollable(Button.builder(Component.translatable("svvoicechanger.studio.open_folder"), button -> openPresetFolder())
-                .bounds(left + half + COLUMN_GAP, libraryRow, half, WIDGET_HEIGHT).build());
+                        .bounds(left, libraryRow, half, WIDGET_HEIGHT).build(),
+                "svvoicechanger.studio.saved_value.desc")));
+        addScrollable(withTooltip(Button.builder(Component.translatable("svvoicechanger.studio.open_folder"), button -> openPresetFolder())
+                .bounds(left + half + COLUMN_GAP, libraryRow, half, WIDGET_HEIGHT).build(), "svvoicechanger.studio.open_folder.desc"));
 
-        addScrollable(Button.builder(Component.translatable("svvoicechanger.studio.advanced"), button -> switchMode(Mode.ADVANCED))
-                .bounds(left, libraryRow + ROW_HEIGHT + 4, fullWidth, WIDGET_HEIGHT).build());
+        addScrollable(withTooltip(Button.builder(Component.translatable("svvoicechanger.studio.advanced"), button -> switchMode(Mode.ADVANCED))
+                .bounds(left, libraryRow + ROW_HEIGHT + 4, fullWidth, WIDGET_HEIGHT).build(), "svvoicechanger.studio.advanced.desc"));
     }
 
     /** Lays the voices out in a grid. @return the y of the row below it */
@@ -407,15 +408,16 @@ public final class VoiceChangerStudioScreen extends Screen {
                 Button.builder(Component.translatable("svvoicechanger.studio.save"), button -> saveCurrentPreset())
                         .bounds(left + COLUMN_WIDTH - 64, top, 64, WIDGET_HEIGHT).build()));
 
-        this.savedPresetButton = addScrollable(libraryWidget(
+        this.savedPresetButton = addScrollable(libraryWidget(withTooltip(
                 Button.builder(savedPresetButtonText(), button -> cycleSavedPreset())
-                        .bounds(right, top, COLUMN_WIDTH, WIDGET_HEIGHT).build()));
+                        .bounds(right, top, COLUMN_WIDTH, WIDGET_HEIGHT).build(),
+                "svvoicechanger.studio.saved_value.desc")));
 
         int secondRow = top + ROW_HEIGHT + 4;
         this.enabledButton = addScrollable(Button.builder(enabledButtonText(), button -> toggleEnabled())
                 .bounds(left, secondRow, COLUMN_WIDTH, WIDGET_HEIGHT).build());
-        this.selfListenButton = addScrollable(Button.builder(selfListenButtonText(), button -> toggleSelfListen())
-                .bounds(right, secondRow, COLUMN_WIDTH, WIDGET_HEIGHT).build());
+        this.selfListenButton = addScrollable(withTooltip(Button.builder(selfListenButtonText(), button -> toggleSelfListen())
+                .bounds(right, secondRow, COLUMN_WIDTH, WIDGET_HEIGHT).build(), "svvoicechanger.studio.self_listen.desc"));
 
         int thirdRow = secondRow + ROW_HEIGHT + 4;
         addScrollable(tuningWidget(withTooltip(
@@ -428,10 +430,10 @@ public final class VoiceChangerStudioScreen extends Screen {
                 "svvoicechanger.studio.delete_saved.desc")));
 
         int fourthRow = thirdRow + ROW_HEIGHT + 4;
-        addScrollable(Button.builder(Component.translatable("svvoicechanger.studio.simple"), button -> switchMode(Mode.SIMPLE))
-                .bounds(left, fourthRow, COLUMN_WIDTH, WIDGET_HEIGHT).build());
-        addScrollable(Button.builder(Component.translatable("svvoicechanger.studio.open_folder"), button -> openPresetFolder())
-                .bounds(right, fourthRow, COLUMN_WIDTH, WIDGET_HEIGHT).build());
+        addScrollable(withTooltip(Button.builder(Component.translatable("svvoicechanger.studio.simple"), button -> switchMode(Mode.SIMPLE))
+                .bounds(left, fourthRow, COLUMN_WIDTH, WIDGET_HEIGHT).build(), "svvoicechanger.studio.simple.desc"));
+        addScrollable(withTooltip(Button.builder(Component.translatable("svvoicechanger.studio.open_folder"), button -> openPresetFolder())
+                .bounds(right, fourthRow, COLUMN_WIDTH, WIDGET_HEIGHT).build(), "svvoicechanger.studio.open_folder.desc"));
 
         int slidersTop = fourthRow + ROW_HEIGHT + 8;
         this.strengthSlider = addScrollable(new StrengthSlider(
@@ -623,6 +625,7 @@ public final class VoiceChangerStudioScreen extends Screen {
 
     private void refreshButtonLabels() {
         setMessageIfPresent(this.enabledButton, enabledButtonText());
+        applyServerBlock(this.enabledButton);
         setMessageIfPresent(this.selfListenButton, selfListenButtonText());
         setMessageIfPresent(this.savedPresetButton, savedPresetButtonText());
         setMessageIfPresent(this.autotuneKeyButton, autotuneKeyButtonText());
@@ -635,8 +638,14 @@ public final class VoiceChangerStudioScreen extends Screen {
 
     // --- Labels --------------------------------------------------------------
 
+    /**
+     * Reads off whenever nothing is actually being sent, which includes a
+     * server refusing. The player's own preference is untouched underneath and
+     * comes back by itself; a button still reading "on" while the server has
+     * them muted is the thing that makes a mute impossible to diagnose.
+     */
     private Component enabledButtonText() {
-        return Component.translatable(this.controller.isEffectEnabled()
+        return Component.translatable(this.controller.isEffectEnabled() && this.controller.isAllowedByServer()
                 ? "svvoicechanger.studio.enabled_on"
                 : "svvoicechanger.studio.enabled_off");
     }
@@ -701,6 +710,25 @@ public final class VoiceChangerStudioScreen extends Screen {
     private <T extends AbstractWidget> T addScrollable(T widget) {
         this.scrollPanel.add(widget);
         return addRenderableWidget(widget);
+    }
+
+    /**
+     * Greys the on/off switch while the server refuses, and says why on hover.
+     *
+     * <p>Only this one control: everything else still only changes what
+     * happens on this machine, so somebody waiting to be unmuted can carry on
+     * setting up a voice for when they are.</p>
+     */
+    private void applyServerBlock(Button button) {
+        if (button == null) {
+            return;
+        }
+
+        boolean allowed = this.controller.isAllowedByServer();
+        button.active = allowed;
+        button.setTooltip(Tooltip.create(allowed
+                ? Component.translatable("svvoicechanger.tab.enable.desc")
+                : serverBlockedText()));
     }
 
     private static Button withTooltip(Button button, String descriptionKey) {
