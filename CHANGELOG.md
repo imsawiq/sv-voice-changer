@@ -11,6 +11,15 @@
   Both directions now go through a single registration. Fabric was never
   affected: it keeps the two directions in separate registries.
 
+  On NeoForge 26.1 and later the fix needed a second step: the three-argument
+  `playBidirectional` means something different there. It leaves the other
+  direction without a handler, and NeoForge then refuses to finish loading.
+  Those builds use the four-argument form, which takes both handlers.
+- **No more warning screen on Minecraft 26.3.** NeoForge deprecated the
+  `logoFile` key there and puts a warning in front of the player on startup for
+  it. The 26.3 build now uses `iconFile`; older NeoForge does not know that key,
+  so the earlier builds keep `logoFile`.
+
 ### RU
 
 #### Исправлено
@@ -19,6 +28,15 @@
   повторную регистрацию пакета с тем же идентификатором, — мод падал при
   запуске и ронял игру. Теперь оба направления регистрируются одним вызовом.
   Fabric это никогда не затрагивало: там направления лежат в разных реестрах.
+
+  На NeoForge 26.1 и новее понадобился второй шаг: трёхаргументный
+  `playBidirectional` там значит другое — оставляет второе направление без
+  обработчика, и NeoForge отказывается достраивать загрузку. Эти сборки
+  используют четырёхаргументный вариант, который принимает оба обработчика.
+- **На Minecraft 26.3 больше нет экрана с предупреждением.** NeoForge объявил
+  там ключ `logoFile` устаревшим и показывает из-за него предупреждение при
+  запуске. Сборка под 26.3 теперь использует `iconFile`; более старый NeoForge
+  такого ключа не знает, поэтому у остальных сборок остаётся `logoFile`.
 
 
 ## 1.2.0

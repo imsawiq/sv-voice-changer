@@ -62,7 +62,7 @@ public final class VoiceChangerNetwork {
         *///?}
     }
 
-    //? if neoforge {
+    //? if neoforge && <26.1 {
     /*/^*
      * Subscribed by the common entrypoint on the mod event bus.
      *
@@ -70,11 +70,10 @@ public final class VoiceChangerNetwork {
      * by a server that has it, and the other way round.
      *
      * <p>One call, not one per direction: NeoForge keys payloads by their id
-     * and throws on a second registration of the same one, which is what
-     * stopped this mod from launching on NeoForge at all. The three-argument
-     * playBidirectional has the same signature on every NeoForge version this
-     * mod builds against, so the handler is the thing that has to tell the
-     * directions apart.^/
+     * and throws on a second registration of the same one.
+     *
+     * <p>Up to 26.1 the single handler given here serves both directions, so
+     * it has to tell them apart itself.^/
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1").optional();
 
@@ -89,6 +88,36 @@ public final class VoiceChangerNetwork {
                     } else {
                         context.enqueueWork(() -> deliverToClient(data));
                     }
+                });
+    }
+    *///?}
+
+    //? if neoforge && >=26.1 {
+    /*/^*
+     * Subscribed by the common entrypoint on the mod event bus.
+     *
+     * <p>Registered as optional, so a client without this mod is not refused
+     * by a server that has it, and the other way round.
+     *
+     * <p>From 26.1 the three-argument playBidirectional means something else:
+     * it passes null for the other side, leaving one direction without a
+     * handler, and NeoForge then refuses to finish loading. The four-argument
+     * form is the one that registers both, and it takes the server handler
+     * first - the order NeoForge's own playToClient reveals.^/
+    public static void registerPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1").optional();
+
+        registrar.playBidirectional(
+                VoiceChangerPayload.TYPE,
+                VoiceChangerPayload.CODEC,
+                (payload, context) -> {
+                    byte[] data = payload.data();
+                    ServerPlayer player = (ServerPlayer) context.player();
+                    context.enqueueWork(() -> deliverToServer(player, data));
+                },
+                (payload, context) -> {
+                    byte[] data = payload.data();
+                    context.enqueueWork(() -> deliverToClient(data));
                 });
     }
     *///?}

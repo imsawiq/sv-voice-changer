@@ -8,7 +8,7 @@ displayName = "${name}"
 version = "${version}"
 authors = "sawiq_"
 description = "${description}"
-logoFile = "assets/sv-voice-changer/icon.png"
+${icon_key} = "assets/sv-voice-changer/icon.png"
 displayURL = "https://github.com/imsawiq"
 
 [[mixins]]

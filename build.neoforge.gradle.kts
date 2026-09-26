@@ -56,13 +56,20 @@ tasks {
     }
 
     processResources {
+        // NeoForge 26.3 deprecated logoFile and shows a warning screen on
+        // startup for it; iconFile is the square-icon replacement, and this
+        // icon is square. Older NeoForge does not know the new key at all, so
+        // the key itself has to follow the target rather than the value.
+        val iconKey = if (sc.current.parsed >= "26.3") "iconFile" else "logoFile"
+
         val props: Map<String, String> = mapOf(
             "id" to project.property("mod.neoforge_id").toString(),
             "name" to project.property("mod.name").toString(),
             "version" to project.property("mod.version").toString(),
             "description" to project.property("mod.description").toString(),
             "minecraft" to project.property("mod.mc_compat").toString(),
-            "voicechat" to project.property("deps.voicechat_compat").toString()
+            "voicechat" to project.property("deps.voicechat_compat").toString(),
+            "icon_key" to iconKey
         )
         inputs.properties(props)
         filesMatching("META-INF/neoforge.mods.toml") { expand(props) }
