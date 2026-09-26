@@ -8,7 +8,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 //?} else {
-/*import net.neoforged.neoforge.network.PacketDistributor;
+/*import net.minecraft.network.protocol.PacketFlow;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
@@ -68,27 +69,26 @@ public final class VoiceChangerNetwork {
      * <p>Registered as optional, so a client without this mod is not refused
      * by a server that has it, and the other way round.
      *
-     * <p>The two directions are registered separately rather than through
-     * playBidirectional, whose shape changed between the supported NeoForge
-     * versions. These two calls have not moved.^/
+     * <p>One call, not one per direction: NeoForge keys payloads by their id
+     * and throws on a second registration of the same one, which is what
+     * stopped this mod from launching on NeoForge at all. The three-argument
+     * playBidirectional has the same signature on every NeoForge version this
+     * mod builds against, so the handler is the thing that has to tell the
+     * directions apart.^/
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1").optional();
 
-        registrar.playToClient(
+        registrar.playBidirectional(
                 VoiceChangerPayload.TYPE,
                 VoiceChangerPayload.CODEC,
                 (payload, context) -> {
                     byte[] data = payload.data();
-                    context.enqueueWork(() -> deliverToClient(data));
-                });
-
-        registrar.playToServer(
-                VoiceChangerPayload.TYPE,
-                VoiceChangerPayload.CODEC,
-                (payload, context) -> {
-                    byte[] data = payload.data();
-                    ServerPlayer player = (ServerPlayer) context.player();
-                    context.enqueueWork(() -> deliverToServer(player, data));
+                    if (context.flow() == PacketFlow.SERVERBOUND) {
+                        ServerPlayer player = (ServerPlayer) context.player();
+                        context.enqueueWork(() -> deliverToServer(player, data));
+                    } else {
+                        context.enqueueWork(() -> deliverToClient(data));
+                    }
                 });
     }
     *///?}

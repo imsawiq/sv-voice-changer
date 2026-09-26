@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.1
+
+### EN
+
+#### Fixed
+- **NeoForge builds launch again.** 1.2.0 registered its network packet once
+  per direction, and NeoForge refuses a second registration of the same
+  packet id, so the mod failed during startup and took the game down with it.
+  Both directions now go through a single registration. Fabric was never
+  affected: it keeps the two directions in separate registries.
+
+### RU
+
+#### Исправлено
+- **Сборки под NeoForge снова запускаются.** В 1.2.0 сетевой пакет
+  регистрировался отдельно на каждое направление, а NeoForge не допускает
+  повторную регистрацию пакета с тем же идентификатором, — мод падал при
+  запуске и ронял игру. Теперь оба направления регистрируются одним вызовом.
+  Fabric это никогда не затрагивало: там направления лежат в разных реестрах.
+
+
 ## 1.2.0
 
 ### EN
