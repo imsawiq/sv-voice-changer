@@ -2,7 +2,7 @@ mod.id = "sv-voice-changer"
 mod.neoforge_id = "sv_voice_changer"
 mod.name = "Simple Voice Voice Changer"
 mod.group = "org.sawiq"
-mod.version = "1.2.1"
+mod.version = "1.2.2"
 mod.description = "Live voice changer for Simple Voice Chat: presets, detailed tuning, saved profiles, self-listen, native menu integration, an API for other mods, and server-side policy with commands and shared voices."
 
 deps.fabric_loader = "0.19.3"

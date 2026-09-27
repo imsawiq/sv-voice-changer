@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.2.2
+
+### EN
+
+#### Fixed
+- **NeoForge builds no longer crash when you join a world on Minecraft 1.21
+  through 1.21.6.** NeoForge moved the client-side packet send into a new class
+  in 1.21.7 and removed the old one, and this build covers 1.21 through 1.21.8
+  - both sides of that move. It was compiled against the newer Minecraft, so on
+  1.21.6 and earlier the class it reached for was not there and the game came
+  down as soon as the mod greeted the server. The right class is now looked up
+  when the mod loads, so one build works across the whole range. Only NeoForge
+  was affected; Fabric never had this.
+
+### RU
+
+#### Исправлено
+- **Сборки под NeoForge больше не падают при входе в мир на Minecraft 1.21 -
+  1.21.6.** В 1.21.7 NeoForge перенёс отправку пакета с клиента в новый класс,
+  а старый убрал; эта сборка охватывает 1.21 - 1.21.8, то есть обе стороны
+  этого переноса. Собрана она была под более новый Minecraft, поэтому на 1.21.6
+  и старше нужного класса просто не оказывалось, и игра падала, как только мод
+  здоровался с сервером. Теперь нужный класс определяется при загрузке мода, и
+  одна сборка работает на всём диапазоне. Fabric это не затрагивало.
+
+
 ## 1.2.1
 
 ### EN

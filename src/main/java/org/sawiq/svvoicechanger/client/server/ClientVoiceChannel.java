@@ -11,11 +11,10 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 /*import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 *///?}
-//? if neoforge && >=1.21.7 {
-/*import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-*///?}
-//? if neoforge && <1.21.7 {
-/*import net.neoforged.neoforge.network.PacketDistributor;
+//? if neoforge {
+/*import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 *///?}
 
 /** The client end of the channel the server sends its policy over. */
@@ -61,11 +60,8 @@ public final class ClientVoiceChannel {
             //? if fabric {
             ClientPlayNetworking.send(new VoiceChangerPayload(payload));
             //?}
-            //? if neoforge && >=1.21.7 {
-            /*ClientPacketDistributor.sendToServer(new VoiceChangerPayload(payload));
-            *///?}
-            //? if neoforge && <1.21.7 {
-            /*PacketDistributor.sendToServer(new VoiceChangerPayload(payload));
+            //? if neoforge {
+            /*sendToServer(new VoiceChangerPayload(payload));
             *///?}
             return true;
         } catch (RuntimeException exception) {
@@ -74,4 +70,51 @@ public final class ClientVoiceChannel {
             return false;
         }
     }
+
+    //? if neoforge {
+    /*/^*
+     * NeoForge moved the client-side send out of PacketDistributor and into
+     * ClientPacketDistributor in 1.21.7, removing the old entry point at the
+     * same time. One build of this mod covers 1.21 through 1.21.8, which sits
+     * on both sides of that move, so neither class can be named at compile
+     * time - doing that is what made this build crash on 1.21.1 while working
+     * on 1.21.8.
+     *
+     * Resolved once when the class loads. The send itself is rare: a greeting
+     * per connection and a reply to a policy change, never audio.^/
+    private static final Method SEND_TO_SERVER = resolveSendToServer();
+
+    private static Method resolveSendToServer() {
+        String[] candidates = {
+            "net.neoforged.neoforge.client.network.ClientPacketDistributor", // 1.21.7 and later
+            "net.neoforged.neoforge.network.PacketDistributor",              // up to 1.21.6
+        };
+
+        for (String className : candidates) {
+            try {
+                Class<?> distributor = Class.forName(className);
+                return distributor.getMethod(
+                        "sendToServer", CustomPacketPayload.class, CustomPacketPayload[].class);
+            } catch (ClassNotFoundException | NoSuchMethodException ignored) {
+                // Expected: only one of the two exists on any given version.
+            }
+        }
+
+        SvVoiceChanger.LOGGER.error(
+                "No NeoForge packet sender found; the voice changer cannot talk to the server");
+        return null;
+    }
+
+    private static void sendToServer(VoiceChangerPayload payload) {
+        if (SEND_TO_SERVER == null) {
+            return;
+        }
+
+        try {
+            SEND_TO_SERVER.invoke(null, payload, new CustomPacketPayload[0]);
+        } catch (IllegalAccessException | InvocationTargetException exception) {
+            throw new IllegalStateException("Could not send on the voice changer channel", exception);
+        }
+    }
+    *///?}
 }
