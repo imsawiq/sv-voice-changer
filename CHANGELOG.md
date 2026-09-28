@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.2.3
+
+### EN
+
+#### Added
+- **A build of its own for Minecraft 1.21.9 and 1.21.10.** Those two releases
+  were covered by the 1.21.11 build, which was compiled against 1.21.11 - and
+  Minecraft changed enough in that release that the build could not work on the
+  two below it. They now get a build compiled against them, and the 1.21.11
+  build covers only 1.21.11.
+
+#### Fixed
+- **The studio opens again on Minecraft 1.21 through 1.21.5.** Minecraft 1.21.6
+  changed what its text-drawing call returns. Nothing about the call looks
+  different in the source, but it is a different method as far as the game is
+  concerned, so a build compiled against the newer half came down the instant it
+  tried to draw a label - which is to say the moment you opened the studio. The
+  call is now resolved when the mod loads, so it works on either side of that
+  change.
+
+### RU
+
+#### Добавлено
+- **Отдельная сборка под Minecraft 1.21.9 и 1.21.10.** Эти две версии закрывала
+  сборка под 1.21.11, собранная под 1.21.11 - а в этом релизе Minecraft
+  изменился настолько, что на двух версиях ниже она работать не могла. Теперь у
+  них своя сборка, собранная под них, а сборка под 1.21.11 закрывает только
+  1.21.11.
+
+#### Исправлено
+- **Студия снова открывается на Minecraft 1.21 - 1.21.5.** В 1.21.6 Minecraft
+  изменил то, что возвращает вызов отрисовки текста. В исходниках вызов выглядит
+  точно так же, но для игры это другой метод, поэтому сборка, собранная под
+  более новую половину диапазона, падала в тот момент, когда пыталась нарисовать
+  первую подпись - то есть как только ты открывала студию. Теперь нужный вызов
+  определяется при загрузке мода и работает по обе стороны от этого изменения.
+
+
 ## 1.2.2
 
 ### EN

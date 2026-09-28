@@ -2,7 +2,7 @@ mod.id = "sv-voice-changer"
 mod.neoforge_id = "sv_voice_changer"
 mod.name = "Simple Voice Voice Changer"
 mod.group = "org.sawiq"
-mod.version = "1.2.2"
+mod.version = "1.2.3"
 mod.description = "Live voice changer for Simple Voice Chat: presets, detailed tuning, saved profiles, self-listen, native menu integration, an API for other mods, and server-side policy with commands and shared voices."
 
 deps.fabric_loader = "0.19.3"
@@ -152,18 +152,18 @@ deps.neo_loader = "21.9.16-beta"
 deps.voicechat = "neoforge-1.21.9-2.6.4"
 
 ["1.21.10"]
-mod.mc_releases = ["1.21.10"]
+mod.mc_releases = ["1.21.9", "1.21.10"]
 
 [fabric."1.21.10"]
-mod.mc_compat = "1.21.10"
-deps.voicechat_compat = ">=1.21.10-2.6.6"
+mod.mc_compat = ">=1.21.9 <=1.21.10"
+deps.voicechat_compat = ">=1.21.9-2.6.4"
 deps.fabric_api = "0.138.4+1.21.10"
 deps.voicechat = "fabric-1.21.10-2.6.21"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."1.21.10"]
-mod.mc_compat = "[1.21.10]"
-deps.voicechat_compat = "[1.21.10-2.6.6,)"
+mod.mc_compat = "[1.21.9, 1.21.10]"
+deps.voicechat_compat = "[1.21.9-2.6.4,)"
 deps.neo_loader = "21.10.64"
 deps.voicechat = "neoforge-1.21.10-2.6.21"
 
@@ -171,15 +171,15 @@ deps.voicechat = "neoforge-1.21.10-2.6.21"
 mod.mc_releases = ["1.21.11"]
 
 [fabric."1.21.11"]
-mod.mc_compat = ">=1.21.9 <=1.21.11"
-deps.voicechat_compat = ">=1.21.9-2.6.4"
+mod.mc_compat = "1.21.11"
+deps.voicechat_compat = ">=1.21.11-2.6.7"
 deps.fabric_api = "0.141.5+1.21.11"
 deps.voicechat = "fabric-1.21.11-2.6.21"
 deps.voicechat_stub = "2.6.20"
 
 [neoforge."1.21.11"]
-mod.mc_compat = "[1.21.9, 1.21.11]"
-deps.voicechat_compat = "[1.21.9-2.6.4,)"
+mod.mc_compat = "[1.21.11]"
+deps.voicechat_compat = "[1.21.11-2.6.7,)"
 deps.neo_loader = "21.11.44"
 deps.voicechat = "neoforge-1.21.11-2.6.21"
 
