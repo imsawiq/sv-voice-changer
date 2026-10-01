@@ -1,0 +1,36 @@
+// Launches a production Fabric client for Minecraft 1.21.x: the game under
+// intermediary names, mods loaded from jars, exactly as a player runs it.
+// check.py passes everything version-specific; see ../README.md.
+plugins {
+    id 'fabric-loom' version '1.15.5'
+}
+
+def mc = project.property('mc')
+
+base { archivesName = 'runtime-check-probe' }
+layout.buildDirectory = file("build/${mc}")
+
+sourceSets.main {
+    java.srcDirs = ['../probe/src/main/java', '../probe/src/classic/java', '../probe/src/fabric/java']
+    resources.srcDirs = ['../probe/src/fabric/resources']
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${mc}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.property('fabricLoader')}"
+    modCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.property('fabricApi')}"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+tasks.register('runProbe', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+    mods.setFrom(tasks.named('remapJar'), fileTree(project.property('modsDir')) { include '*.jar' })
+    runDir = file(project.property('gameDir'))
+    jvmArgs.addAll("-Dprobe.target=${project.property('target')}", '-Xmx3G')
+}

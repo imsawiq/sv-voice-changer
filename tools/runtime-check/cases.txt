@@ -1,0 +1,29 @@
+# <loader> <Minecraft version> <jar under dist/, newest match wins>
+#
+# Each jar is checked at both ends of the Minecraft range it declares, plus
+# around 1.21.6, where drawString changed its return type underneath the
+# 1.21.8 build, and at 1.21.3 and 1.21.5, which only have older Simple
+# Voice Chat releases.
+
+fabric   1.21     dist/sv-voice-changer-fabric-*+1.21.8.jar
+fabric   1.21.5   dist/sv-voice-changer-fabric-*+1.21.8.jar
+fabric   1.21.6   dist/sv-voice-changer-fabric-*+1.21.8.jar
+fabric   1.21.8   dist/sv-voice-changer-fabric-*+1.21.8.jar
+fabric   1.21.9   dist/sv-voice-changer-fabric-*+1.21.10.jar
+fabric   1.21.10  dist/sv-voice-changer-fabric-*+1.21.10.jar
+fabric   1.21.11  dist/sv-voice-changer-fabric-*+1.21.11.jar
+fabric   26.1     dist/sv-voice-changer-fabric-*+26.1.2.jar
+fabric   26.1.2   dist/sv-voice-changer-fabric-*+26.1.2.jar
+fabric   26.2     dist/sv-voice-changer-fabric-*+26.2.jar
+fabric   26.3     dist/sv-voice-changer-fabric-*+26.3.jar
+
+neoforge 1.21.1   dist/sv-voice-changer-neoforge-*+1.21.8.jar
+neoforge 1.21.3   dist/sv-voice-changer-neoforge-*+1.21.8.jar
+neoforge 1.21.5   dist/sv-voice-changer-neoforge-*+1.21.8.jar
+neoforge 1.21.8   dist/sv-voice-changer-neoforge-*+1.21.8.jar
+neoforge 1.21.9   dist/sv-voice-changer-neoforge-*+1.21.10.jar
+neoforge 1.21.10  dist/sv-voice-changer-neoforge-*+1.21.10.jar
+neoforge 1.21.11  dist/sv-voice-changer-neoforge-*+1.21.11.jar
+neoforge 26.1.2   dist/sv-voice-changer-neoforge-*+26.1.2.jar
+neoforge 26.2     dist/sv-voice-changer-neoforge-*+26.2.jar
+neoforge 26.3     dist/sv-voice-changer-neoforge-*+26.3.jar

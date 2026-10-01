@@ -15,3 +15,8 @@ replay_*.log
 
 # Local redraw reference extracted from Simple Voice Chat; do not redistribute.
 /simple-voice-chat-microphone-reference.png
+
+# Runtime check: downloaded mods, the generated world, game directories
+/tools/runtime-check/.work/
+/tools/runtime-check/*/build/
+/tools/runtime-check/*/.gradle/

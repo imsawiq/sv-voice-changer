@@ -1,0 +1,8 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "none"
+
+[[mods]]
+modId = "runtime_check_probe"
+version = "1"
+displayName = "Voice changer runtime check"

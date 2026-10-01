@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime_check_probe",
+  "version": "1",
+  "name": "Voice changer runtime check",
+  "environment": "client",
+  "entrypoints": { "client": ["probe.FabricProbe"] },
+  "depends": { "fabricloader": "*", "fabric-lifecycle-events-v1": "*" }
+}

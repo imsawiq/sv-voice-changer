@@ -1,0 +1,36 @@
+// Launches a production Fabric client for Minecraft 26.x. The game ships
+// unobfuscated from 26.1 on, so nothing is remapped. See ../README.md.
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.15.5'
+}
+
+def mc = project.property('mc')
+// 26.2 moved the current screen from the client onto its GUI.
+def screens = mc.startsWith('26.1') ? 'classic' : 'gui-screen'
+
+base { archivesName = 'runtime-check-probe' }
+layout.buildDirectory = file("build/${mc}")
+
+sourceSets.main {
+    java.srcDirs = ['../probe/src/main/java', "../probe/src/${screens}/java", '../probe/src/fabric/java']
+    resources.srcDirs = ['../probe/src/fabric/resources']
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${mc}"
+    implementation "net.fabricmc:fabric-loader:${project.property('fabricLoader')}"
+    compileOnly "net.fabricmc.fabric-api:fabric-api:${project.property('fabricApi')}"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+tasks.register('runProbe', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+    mods.setFrom(tasks.named('jar'), fileTree(project.property('modsDir')) { include '*.jar' })
+    runDir = file(project.property('gameDir'))
+    jvmArgs.addAll("-Dprobe.target=${project.property('target')}", '-Xmx3G')
+}

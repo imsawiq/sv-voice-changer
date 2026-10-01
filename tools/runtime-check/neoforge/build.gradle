@@ -1,0 +1,35 @@
+// Launches a NeoForge 1.21.x client with the jars under test in its own mods
+// folder. NeoForge runs the game under Mojang's names in production as well,
+// so this loads them exactly as a player's install does. See ../README.md.
+plugins {
+    id 'net.neoforged.moddev' version '2.0.141'
+}
+
+def neoForgeVersion = project.property('neoforge')
+
+layout.buildDirectory = file("build/${neoForgeVersion}")
+
+sourceSets.main {
+    java.srcDirs = ['../probe/src/main/java', '../probe/src/classic/java', '../probe/src/neoforge/java']
+    resources.srcDirs = ['../probe/src/neoforge/resources']
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+neoForge {
+    version = neoForgeVersion
+    runs {
+        client {
+            client()
+            gameDirectory = file(project.property('gameDir'))
+            systemProperty 'probe.target', project.property('target')
+            jvmArguments.add('-Xmx3G')
+        }
+    }
+    mods {
+        runtime_check_probe {
+            sourceSet sourceSets.main
+        }
+    }
+}

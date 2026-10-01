@@ -1,0 +1,36 @@
+// Launches a NeoForge 26.x client with the jars under test in its own mods
+// folder, as the 1.21 project does. See ../README.md.
+plugins {
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+
+def neoForgeVersion = project.property('neoforge')
+// 26.2 moved the current screen from the client onto its GUI.
+def screens = neoForgeVersion.startsWith('26.1') ? 'classic' : 'gui-screen'
+
+layout.buildDirectory = file("build/${neoForgeVersion}")
+
+sourceSets.main {
+    java.srcDirs = ['../probe/src/main/java', "../probe/src/${screens}/java", '../probe/src/neoforge/java']
+    resources.srcDirs = ['../probe/src/neoforge/resources']
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+neoForge {
+    version = neoForgeVersion
+    runs {
+        client {
+            client()
+            gameDirectory = file(project.property('gameDir'))
+            systemProperty 'probe.target', project.property('target')
+            jvmArguments.add('-Xmx3G')
+        }
+    }
+    mods {
+        runtime_check_probe {
+            sourceSet sourceSets.main
+        }
+    }
+}
