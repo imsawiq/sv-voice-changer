@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.5
+
+### EN
+
+#### Fixed
+- **The key binds have a proper heading on Minecraft 1.21.9 and later.** In
+  Controls > Key Binds the two voice changer binds sat under a raw text key
+  ("key.category.sv-voice-changer.voice_changer") instead of the mod's name,
+  at the very bottom of the list, and were easy to miss. They are now under
+  "Simple Voice Voice Changer".
+
+### RU
+
+#### Исправлено
+- **У биндов нормальный заголовок на Minecraft 1.21.9 и новее.** В "Управление
+  > Привязки клавиш" оба бинда войсченджера стояли в самом низу под сырым
+  текстовым ключом ("key.category.sv-voice-changer.voice_changer") вместо
+  названия мода, и их было легко не заметить. Теперь они под заголовком
+  "Simple Voice Voice Changer".
+
+
 ## 1.2.4
 
 ### EN

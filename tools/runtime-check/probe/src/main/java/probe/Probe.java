@@ -3,6 +3,7 @@ package probe;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.BackupConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -83,6 +84,13 @@ public final class Probe {
     private void buildSteps(Target target) {
         step("title screen", 2400, (mc, t) -> !Screens.isLoading(mc) && Screens.current(mc) instanceof TitleScreen && t > 100);
         step("voice changer initialized", 1200, (mc, t) -> target.isInitialized());
+        step("key bindings registered and named", 20, (mc, t) -> {
+            List<String> problems = target.bindingProblems(mc);
+            if (!problems.isEmpty()) {
+                throw new IllegalStateException(String.join("; ", problems));
+            }
+            return true;
+        });
 
         step("studio over the title screen", 200, (mc, t) -> {
             if (t == 0) {

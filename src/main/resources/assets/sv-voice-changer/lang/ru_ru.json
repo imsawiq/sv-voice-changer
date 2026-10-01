@@ -109,6 +109,7 @@
   "svvoicechanger.bind.listening": "Нажми любую клавишу...",
   "svvoicechanger.bind.clear": "Очистить",
   "category.svvoicechanger": "Simple Voice Voice Changer",
+  "key.category.sv-voice-changer.voice_changer": "Simple Voice Voice Changer",
   "svvoicechanger.toggle": "Переключить войсченджер",
   "key.svvoicechanger.toggle": "Переключить войсченджер",
   "key.svvoicechanger.open_studio": "Открыть студию войсченджера",

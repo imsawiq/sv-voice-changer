@@ -1,7 +1,10 @@
 package probe;
 
 import java.lang.reflect.Method;
+import java.util.List;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.locale.Language;
 
 /** One voice changer build: where its studio and controller live, and how to reach it in a world. */
 abstract class Target {
@@ -63,6 +66,17 @@ abstract class Target {
     }
 
     abstract boolean isVoiceConnected() throws ReflectiveOperationException;
+
+    /**
+     * Everything wrong with the mod's key bindings: one missing, or a name or
+     * heading with no translation, which shows the player a raw key such as
+     * "key.category.mod.thing" and makes the binding look absent.
+     */
+    abstract List<String> bindingProblems(Minecraft mc) throws ReflectiveOperationException;
+
+    static boolean isTranslated(String key) {
+        return Language.getInstance().has(key);
+    }
 
     /** Opens the voice mod's own menu and, from there, the studio. */
     abstract void addWorldSteps(Probe probe);
