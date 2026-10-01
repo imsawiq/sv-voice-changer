@@ -1,5 +1,68 @@
 # Changelog
 
+## 1.2.4
+
+### EN
+
+#### Fixed
+- **The studio no longer crashes, or opens empty, on Fabric.** The fix in 1.2.3
+  looked up the text-drawing call by its name, and that name only exists in the
+  development environment: a Fabric game installed by a launcher calls it
+  something else. Every Fabric build for 1.21 through 1.21.11 crashed the
+  moment the studio drew its title, and where another mod caught that crash
+  the studio showed up as a dark screen with nothing on it. Text is now drawn
+  through a call that has the same shape on every 1.21 release, so nothing has
+  to be looked up.
+- **NeoForge on Minecraft 1.21.7 through 1.21.11 no longer stops at loading.** NeoForge
+  21.7 changed how a packet that travels both ways is registered: the old call
+  now leaves the client side without a handler, and NeoForge stops the game
+  while loading ("clientbound payloads are missing client-side handlers").
+  Those versions now register both sides the new way; the 1.21.8 build, which
+  also covers releases from before the change, checks which one it is on.
+- **The studio title is sharp again on 1.21 through 1.21.5.** Those releases
+  blur the menu background as part of drawing the buttons, and the title was
+  drawn before that, so it came out blurred.
+- **The studio fits the default game window.** At 854x480 with automatic GUI
+  scale, the right-hand buttons ran under the scrollbar and a pixel off the
+  screen. The columns now narrow to fit.
+- **The on/off switch in an open studio follows the server.** If a server
+  turned the voice changer off while the studio was open, the switch kept
+  reading "On" until you reopened it.
+- **The diagnostics line stops claiming audio is arriving when it is not.** It
+  kept showing the last busy second after the microphone went quiet, which with
+  push-to-talk is every time the key is let go.
+
+### RU
+
+#### Исправлено
+- **Студия на Fabric больше не падает и не открывается пустой.** Исправление в
+  1.2.3 искало вызов отрисовки текста по имени, а это имя есть только в среде
+  разработки: в игре, установленной через лаунчер, Fabric называет его иначе.
+  Все Fabric-сборки под 1.21 - 1.21.11 падали, как только студия рисовала
+  заголовок, а если этот краш перехватывал другой мод, студия выглядела как
+  тёмный экран без интерфейса. Теперь текст рисуется через вызов, который
+  одинаков во всех релизах 1.21, и искать ничего не нужно.
+- **NeoForge на Minecraft 1.21.7 - 1.21.11 больше не останавливается при загрузке.** В NeoForge
+  21.7 поменялась регистрация пакета, который ходит в обе стороны: старый
+  вызов теперь оставляет клиентскую сторону без обработчика, и NeoForge
+  останавливает игру при загрузке ("clientbound payloads are missing
+  client-side handlers"). Теперь на этих версиях обе стороны регистрируются
+  по-новому, а сборка под 1.21.8, которая покрывает и версии до этого
+  изменения, сама проверяет, на какой из них запущена.
+- **Заголовок студии снова чёткий на 1.21 - 1.21.5.** Эти версии размывают фон
+  меню в момент отрисовки кнопок, а заголовок рисовался раньше и размывался
+  вместе с фоном.
+- **Студия помещается в окно игры по умолчанию.** При 854x480 и автоматическом
+  масштабе интерфейса правые кнопки заезжали под полосу прокрутки и на пиксель
+  за край экрана. Теперь колонки сужаются под окно.
+- **Переключатель в открытой студии следует за сервером.** Если сервер
+  выключал войсченджер, пока студия была открыта, переключатель продолжал
+  показывать "вкл" до повторного открытия.
+- **Строка диагностики больше не утверждает, что звук идёт, когда его нет.** Она
+  продолжала показывать последнюю активную секунду после того, как микрофон
+  затих, а с push-to-talk это происходит каждый раз, когда отпускаешь клавишу.
+
+
 ## 1.2.3
 
 ### EN

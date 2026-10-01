@@ -42,7 +42,14 @@ public final class VoiceChangerStudioScreen extends Screen {
     private static final int WIDGET_HEIGHT = 20;
     private static final int CONTENT_TOP = 34;
     private static final int FOOTER_HEIGHT = 34;
-    private static final int COLUMN_WIDTH = 206;
+    private static final int MAX_COLUMN_WIDTH = 206;
+    /**
+     * Kept clear on both sides. The scrollbar sits 7 pixels in from the right
+     * edge, so anything closer runs under it; the default 854x480 window at
+     * automatic GUI scale is only 427 wide, which is less than two full columns
+     * and their margins.
+     */
+    private static final int SIDE_MARGIN = 10;
     private static final int COLUMN_GAP = 8;
     private static final int PRESET_COLUMNS = 4;
 
@@ -113,6 +120,8 @@ public final class VoiceChangerStudioScreen extends Screen {
      */
     private List<VoicePreset> layoutContributedVoices = List.of();
 
+    /** Full width when the window allows it, narrower when it does not; set on every layout. */
+    private int columnWidth = MAX_COLUMN_WIDTH;
     private Mode mode = Mode.SIMPLE;
     private String selectedSavedPreset = CURRENT_PRESET_OPTION;
 
@@ -135,6 +144,7 @@ public final class VoiceChangerStudioScreen extends Screen {
 
     @Override
     protected void init() {
+        this.columnWidth = Math.min(MAX_COLUMN_WIDTH, (this.width - 2 * SIDE_MARGIN - COLUMN_GAP) / 2);
         clearWidgets();
         this.scrollPanel.clear();
         this.parameterSliders.clear();
@@ -170,6 +180,26 @@ public final class VoiceChangerStudioScreen extends Screen {
     public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
     //?}
         context.fill(0, 0, this.width, this.height, 0xA0000000);
+
+        //? if >=26.1 {
+        /*super.extractRenderState(context, mouseX, mouseY, delta);
+        *///?} else {
+        super.render(context, mouseX, mouseY, delta);
+        //?}
+
+        renderHeader(context);
+        this.scrollPanel.renderScrollbar(context, this.width - 7);
+        if (this.mode == Mode.SIMPLE) {
+            renderLevelMeter(context);
+        }
+    }
+
+    /**
+     * Drawn after the widgets rather than before them: up to 1.21.5 the vanilla
+     * screen blurs the menu background as part of drawing its widgets, and
+     * would blur anything painted before that along with it.
+     */
+    private void renderHeader(GuiGraphics context) {
         MinecraftTextAccess.drawCentered(context, this.font, this.title, this.width / 2, 12, 0xFFFFFFFF);
 
         // Under the title in both modes: somebody whose voice changer has
@@ -182,17 +212,6 @@ public final class VoiceChangerStudioScreen extends Screen {
             MinecraftTextAccess.drawCentered(context, this.font, voicesRestrictedText(),
                     this.width / 2, 23,
                     this.controller.isSelectedVoiceAllowed() ? 0xFFFFAA55 : 0xFFFF7777);
-        }
-
-        //? if >=26.1 {
-        /*super.extractRenderState(context, mouseX, mouseY, delta);
-        *///?} else {
-        super.render(context, mouseX, mouseY, delta);
-        //?}
-
-        this.scrollPanel.renderScrollbar(context, this.width - 7);
-        if (this.mode == Mode.SIMPLE) {
-            renderLevelMeter(context);
         }
     }
 
@@ -240,13 +259,19 @@ public final class VoiceChangerStudioScreen extends Screen {
         return step != 0 && this.scrollPanel.scrollBy(step);
     }
 
-    /** Rebuilds when a mod or the server contributes or withdraws a voice. */
+    /**
+     * Rebuilds when a mod or the server contributes or withdraws a voice, and
+     * otherwise keeps the labels current: a server can turn the voice changer
+     * off while this is open, and the switch must not go on reading "on".
+     */
     @Override
     public void tick() {
         super.tick();
         if (this.controller.api().contributedPresets().all() != this.layoutContributedVoices) {
             init();
+            return;
         }
+        refreshButtonLabels();
     }
 
     // --- Rendering -----------------------------------------------------------
@@ -259,8 +284,8 @@ public final class VoiceChangerStudioScreen extends Screen {
         double peak = Math.min(1.0D, this.controller.getInputLevel());
         this.meterLevel = peak > this.meterLevel ? peak : this.meterLevel * 0.90D;
 
-        int left = centeredLeft(COLUMN_WIDTH * 2 + COLUMN_GAP);
-        int right = left + COLUMN_WIDTH * 2 + COLUMN_GAP;
+        int left = centeredLeft(this.columnWidth * 2 + COLUMN_GAP);
+        int right = left + this.columnWidth * 2 + COLUMN_GAP;
         int rowBottom = CONTENT_TOP + WIDGET_HEIGHT - this.scrollPanel.scrollOffset();
 
         int barTop = rowBottom + METER_BAR_OFFSET;
@@ -308,7 +333,7 @@ public final class VoiceChangerStudioScreen extends Screen {
     // --- Simple mode ---------------------------------------------------------
 
     private void buildSimpleMode(int top) {
-        int fullWidth = COLUMN_WIDTH * 2 + COLUMN_GAP;
+        int fullWidth = this.columnWidth * 2 + COLUMN_GAP;
         int left = centeredLeft(fullWidth);
         int half = (fullWidth - COLUMN_GAP) / 2;
 
@@ -396,48 +421,48 @@ public final class VoiceChangerStudioScreen extends Screen {
     // --- Advanced mode -------------------------------------------------------
 
     private void buildAdvancedMode(int top) {
-        int left = centeredLeft(COLUMN_WIDTH * 2 + COLUMN_GAP);
-        int right = left + COLUMN_WIDTH + COLUMN_GAP;
-        int half = (COLUMN_WIDTH - 4) / 2;
+        int left = centeredLeft(this.columnWidth * 2 + COLUMN_GAP);
+        int right = left + this.columnWidth + COLUMN_GAP;
+        int half = (this.columnWidth - 4) / 2;
 
-        this.presetNameField = addScrollable(new EditBox(this.font, left, top, COLUMN_WIDTH - 70, WIDGET_HEIGHT,
+        this.presetNameField = addScrollable(new EditBox(this.font, left, top, this.columnWidth - 70, WIDGET_HEIGHT,
                 Component.translatable("svvoicechanger.studio.preset_name")));
         this.presetNameField.setMaxLength(48);
         this.presetNameField.setValue("MyPreset");
         addScrollable(libraryWidget(
                 Button.builder(Component.translatable("svvoicechanger.studio.save"), button -> saveCurrentPreset())
-                        .bounds(left + COLUMN_WIDTH - 64, top, 64, WIDGET_HEIGHT).build()));
+                        .bounds(left + this.columnWidth - 64, top, 64, WIDGET_HEIGHT).build()));
 
         this.savedPresetButton = addScrollable(libraryWidget(withTooltip(
                 Button.builder(savedPresetButtonText(), button -> cycleSavedPreset())
-                        .bounds(right, top, COLUMN_WIDTH, WIDGET_HEIGHT).build(),
+                        .bounds(right, top, this.columnWidth, WIDGET_HEIGHT).build(),
                 "svvoicechanger.studio.saved_value.desc")));
 
         int secondRow = top + ROW_HEIGHT + 4;
         this.enabledButton = addScrollable(Button.builder(enabledButtonText(), button -> toggleEnabled())
-                .bounds(left, secondRow, COLUMN_WIDTH, WIDGET_HEIGHT).build());
+                .bounds(left, secondRow, this.columnWidth, WIDGET_HEIGHT).build());
         this.selfListenButton = addScrollable(withTooltip(Button.builder(selfListenButtonText(), button -> toggleSelfListen())
-                .bounds(right, secondRow, COLUMN_WIDTH, WIDGET_HEIGHT).build(), "svvoicechanger.studio.self_listen.desc"));
+                .bounds(right, secondRow, this.columnWidth, WIDGET_HEIGHT).build(), "svvoicechanger.studio.self_listen.desc"));
 
         int thirdRow = secondRow + ROW_HEIGHT + 4;
         addScrollable(tuningWidget(withTooltip(
                 Button.builder(Component.translatable("svvoicechanger.studio.reset"), button -> resetToNeutral())
-                        .bounds(left, thirdRow, COLUMN_WIDTH, WIDGET_HEIGHT).build(),
+                        .bounds(left, thirdRow, this.columnWidth, WIDGET_HEIGHT).build(),
                 "svvoicechanger.studio.reset.desc")));
         addScrollable(libraryWidget(withTooltip(
                 Button.builder(Component.translatable("svvoicechanger.studio.delete_saved"), button -> deleteSelectedPreset())
-                        .bounds(right, thirdRow, COLUMN_WIDTH, WIDGET_HEIGHT).build(),
+                        .bounds(right, thirdRow, this.columnWidth, WIDGET_HEIGHT).build(),
                 "svvoicechanger.studio.delete_saved.desc")));
 
         int fourthRow = thirdRow + ROW_HEIGHT + 4;
         addScrollable(withTooltip(Button.builder(Component.translatable("svvoicechanger.studio.simple"), button -> switchMode(Mode.SIMPLE))
-                .bounds(left, fourthRow, COLUMN_WIDTH, WIDGET_HEIGHT).build(), "svvoicechanger.studio.simple.desc"));
+                .bounds(left, fourthRow, this.columnWidth, WIDGET_HEIGHT).build(), "svvoicechanger.studio.simple.desc"));
         addScrollable(withTooltip(Button.builder(Component.translatable("svvoicechanger.studio.open_folder"), button -> openPresetFolder())
-                .bounds(right, fourthRow, COLUMN_WIDTH, WIDGET_HEIGHT).build(), "svvoicechanger.studio.open_folder.desc"));
+                .bounds(right, fourthRow, this.columnWidth, WIDGET_HEIGHT).build(), "svvoicechanger.studio.open_folder.desc"));
 
         int slidersTop = fourthRow + ROW_HEIGHT + 8;
         this.strengthSlider = addScrollable(new StrengthSlider(
-                left, slidersTop, COLUMN_WIDTH, WIDGET_HEIGHT,
+                left, slidersTop, this.columnWidth, WIDGET_HEIGHT,
                 this.controller::getStrength, this.controller::setStrength));
 
         for (int i = 0; i < LEFT_COLUMN.length; i++) {
@@ -454,7 +479,7 @@ public final class VoiceChangerStudioScreen extends Screen {
                 VoiceParameter.AUTOTUNE_KEY.descriptionKey())));
         this.autotuneScaleButton = addScrollable(tuningWidget(withTooltip(
                 Button.builder(autotuneScaleButtonText(), button -> cycleAutotuneScale())
-                        .bounds(right + half + 4, autotuneRow, COLUMN_WIDTH - half - 4, WIDGET_HEIGHT).build(),
+                        .bounds(right + half + 4, autotuneRow, this.columnWidth - half - 4, WIDGET_HEIGHT).build(),
                 VoiceParameter.AUTOTUNE_SCALE.descriptionKey())));
     }
 
@@ -485,7 +510,7 @@ public final class VoiceChangerStudioScreen extends Screen {
 
     private void addParameterSlider(int x, int y, VoiceParameter parameter) {
         ParameterSlider slider = new ParameterSlider(
-                x, y, COLUMN_WIDTH, WIDGET_HEIGHT, parameter,
+                x, y, this.columnWidth, WIDGET_HEIGHT, parameter,
                 this.controller::getPlayerProfile, this::applyCustomProfile);
         this.parameterSliders.add(slider);
         addScrollable(tuningWidget(slider));
@@ -743,7 +768,7 @@ public final class VoiceChangerStudioScreen extends Screen {
     }
 
     private int centeredLeft(int contentWidth) {
-        return Math.max(8, (this.width - contentWidth) / 2);
+        return Math.max(SIDE_MARGIN, (this.width - contentWidth) / 2);
     }
 
     private int contentBottom() {

@@ -51,7 +51,7 @@ public final class SelfListenMonitor {
     private volatile int lastBlockFrames;
     private volatile int blocksPerSecond;
     private int blocksThisSecond;
-    private long secondStartedAt = System.currentTimeMillis();
+    private volatile long secondStartedAt = System.currentTimeMillis();
 
     private Thread playbackThread;
     private volatile boolean running;
@@ -84,7 +84,16 @@ public final class SelfListenMonitor {
                 this.processor.appliedPitchRatio(),
                 this.lastBlockFrames,
                 1,
-                this.blocksPerSecond);
+                recentBlocksPerSecond());
+    }
+
+    /**
+     * The count only moves when a block arrives, so once blocks stop coming it
+     * would go on showing the last busy second: a microphone that stalls
+     * would still read as running.
+     */
+    private int recentBlocksPerSecond() {
+        return System.currentTimeMillis() - this.secondStartedAt > 2_000L ? 0 : this.blocksPerSecond;
     }
 
     public synchronized void start() {
