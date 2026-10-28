@@ -29,12 +29,24 @@
 - **The engine download fits your graphics card**: about 2.1 GB for NVIDIA RTX,
   2.7 GB for older NVIDIA, 0.25 GB for AMD, Intel or no graphics card. The
   install screen says which before you agree.
+- **Voices you drop in show up by themselves.** While the studio is open the
+  voices folder is watched: a downloaded `.zip` is unpacked, a voice nested one
+  folder too deep is moved up, and a new voice appears in the gallery and is
+  picked. The AI voice tab has a Voices folder button for it.
+- **The install says where it is.** Step of four, a progress bar, minutes so
+  far, and that the screen can be closed meanwhile; the chat says when it is
+  done. An install cut short by quitting the game carries on at the next start
+  without downloading again what it already has.
 
 #### Changed
-- **The studio looks like Plasmo Voice's own settings.** Tabs along the top,
+- **The studio is laid out like Minecraft's own options.** Tabs along the top,
   a label on the left and the control on the right in every row, sections with
   titles. The effects tab, the AI voice tab, voice training and the guides all
   share it. The pitch diagnostics line moved to the advanced view.
+
+#### Fixed
+- An engine that is still loading reads "starting", and a voice still loading
+  is tried again, instead of the tab showing "request timed out".
 
 ### RU
 
@@ -63,12 +75,24 @@
 - **Движок скачивается под твою видеокарту**: около 2,1 ГБ для NVIDIA RTX,
   2,7 ГБ для старых NVIDIA, 0,25 ГБ для AMD, Intel или без видеокарты. Окно
   установки говорит это до того, как ты согласишься.
+- **Брошенные в папку голоса появляются сами.** Пока открыта студия, мод
+  следит за папкой голосов: скачанный `.zip` распаковывается, голос, вложенный
+  на папку глубже, поднимается наверх, а новый голос появляется в галерее и
+  выбирается. На вкладке ИИ-голоса для этого есть кнопка «Папка голосов».
+- **Установка показывает, где она.** Шаг из четырёх, полоса, сколько минут
+  прошло и что окно можно закрыть; когда закончится, напишет в чат. Если выйти
+  из игры посреди установки, она продолжится при следующем запуске, и уже
+  скачанное заново не качается.
 
 #### Изменено
-- **Студия выглядит как настройки самого Plasmo Voice.** Вкладки сверху, в
+- **Студия устроена как настройки самого Minecraft.** Вкладки сверху, в
   каждой строке подпись слева и кнопка справа, разделы с заголовками. Так
   устроены вкладка эффектов, вкладка ИИ-голоса, обучение голоса и инструкции.
   Строка диагностики тона переехала в тонкую настройку.
+
+#### Исправлено
+- Пока движок загружается, вкладка пишет «запускается», а голос, который ещё
+  грузится, пробуется снова, вместо ошибки «request timed out».
 
 
 ## 1.2.5
