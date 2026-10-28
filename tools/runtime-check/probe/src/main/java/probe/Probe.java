@@ -157,6 +157,12 @@ public final class Probe {
         });
         step("voice connected", 1200, (mc, t) -> t >= 100 && target.isVoiceConnected());
 
+        // check.py --gallery: screenshots for the mod pages instead of the checks.
+        if (new File("probe-gallery").exists()) {
+            Gallery.addSteps(this, target);
+            return;
+        }
+
         target.addWorldSteps(this);
 
         step("turn the effect on", 200, (mc, t) -> {

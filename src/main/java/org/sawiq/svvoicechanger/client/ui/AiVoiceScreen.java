@@ -243,8 +243,9 @@ public final class AiVoiceScreen extends CompatScreen {
 
         this.list.text(() -> installStepLine(installer.progress()), () -> StudioPaint.WHITE, 1);
         this.list.custom(10, (graphics, x, top, width) -> paintInstallBar(graphics, installer.progress(), x, top + 2, width));
-        this.list.text(() -> installDetailLine(installer.progress()), () -> StudioPaint.GREY, 2);
-        this.list.text(() -> Component.translatable("svvoicechanger.ai.install.background"), () -> StudioPaint.TEXT, 3);
+        // Room for English at GUI scale 3, the longest wording at the narrowest list.
+        this.list.text(() -> installDetailLine(installer.progress()), () -> StudioPaint.GREY, 3);
+        this.list.text(() -> Component.translatable("svvoicechanger.ai.install.background"), () -> StudioPaint.TEXT, 4);
         this.list.row(button("svvoicechanger.ai.install.cancel", "svvoicechanger.ai.install.cancel.desc",
                 installer::cancel));
     }

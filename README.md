@@ -7,12 +7,15 @@
 
 ### ✨ Features
 
-- **Built-in presets** — `Man`, `Woman`, `Titan`, `Kid`, `Demon`, and `Radio`.
+- **Built-in presets** — `Man`, `Woman`, `Kid`, `Titan`, `Demon`, `Batman`, and `Radio`.
 - **Real outgoing processing** — changes microphone samples before Simple Voice Chat encodes and sends them.
-- **Voice Changer Studio** — pitch, formant, EQ, distortion, echo, tremolo, robot layer, autotune, and more.
+- **Voice Changer Studio** — an Effects tab and an AI Voice tab, one row per setting, in the vanilla options style. The simple mode has one strength control and a microphone meter; the advanced mode has pitch, formant, EQ, distortion, echo, tremolo, robot layer, autotune, and more.
 - **Saved profiles** — create, load, delete, and share custom presets.
 - **Native menu integration** — opens from the Simple Voice Chat menu and changes the talking HUD microphone while enabled.
-- **AI voice** — speak with an AI voice instead of the effects: w-okada or the Voice Changer Engine on your own PC, free and live, or ElevenLabs with your own key. The engine is picked automatically. See [docs/AI_VOICE.md](docs/AI_VOICE.md)
+- **AI voice** — speak with an AI voice instead of the effects: the Voice Changer Engine or w-okada on your own PC, free and live, or ElevenLabs with your own key. The engine is picked automatically. See [docs/AI_VOICE.md](docs/AI_VOICE.md)
+- **One-click engine install** — the AI Voice tab downloads the Voice Changer Engine for your graphics card (NVIDIA RTX, older NVIDIA, or AMD and Intel through DirectML), shows the progress, and keeps going while you play. The mod starts and stops the engine by itself
+- **Drop-in voices** — put an RVC voice into the voices folder, a `.pth` with its `.index` or the downloaded `.zip` as it is, and it shows up in the voice gallery and gets picked, no restart
+- **Train your own voice** — drop your recordings into a folder and train a voice without leaving the game; the mod checks the recordings first and says what is missing
 - **API for other mods** — a radio, a mask or a machine can apply a voice while it is in use and hand it back; mods can also add their own voices to the studio. See [docs/API.md](docs/API.md)
 - **Server side** — install it on the server too, to allow or deny the voice changer, mute individual players by command, and hand out your own voices to everyone connected
 - **Works without a server** — everything except the server policy runs on your client alone
@@ -55,6 +58,7 @@ These minimums apply to both Fabric and NeoForge. Version 1.2.1 compiles on all 
 2. Open the Simple Voice Chat menu and press the **voice changer button** at the top.
 3. Pick a voice from the grid and set the strength. **Self Listen** plays your own processed voice back so you can hear what everyone else hears.
 4. **J** switches the effect on and off without opening anything. There is a second, unbound key for opening the studio directly; both are in Minecraft's controls.
+5. For an AI voice, open the **AI Voice** tab and press **Free, on my PC**: the mod installs the engine, 0.25 to 2.7 GB depending on your graphics card. Then add voices through **Voices folder**, or train **Your own voice**.
 
 Nothing here needs a server: on a server without the mod, everything except the server policy still works.
 
@@ -97,12 +101,15 @@ The full reference, including the API for other mods, is in [docs/API.md](docs/A
 
 ### ✨ Особенности
 
-- **Готовые пресеты** — `Man`, `Woman`, `Titan`, `Kid`, `Demon` и `Radio`.
+- **Готовые пресеты** — `Man`, `Woman`, `Kid`, `Titan`, `Demon`, `Batman` и `Radio`.
 - **Реальная обработка исходящего голоса** — микрофон меняется до кодирования и отправки через Simple Voice Chat.
-- **Студия войсченджера** — pitch, formant, EQ, distortion, echo, tremolo, robot layer, autotune и другие параметры.
+- **Студия войсченджера** — вкладки «Эффекты» и «ИИ-голос», по строке на настройку, в стиле ванильных настроек. В простом режиме одна ручка силы и индикатор микрофона; в продвинутом pitch, formant, EQ, distortion, echo, tremolo, robot layer, autotune и другие параметры.
 - **Сохранение профилей** — создание, загрузка, удаление и обмен кастомными пресетами.
 - **Нативная интеграция** — студия открывается из меню Simple Voice Chat, а при включённом эффекте меняется HUD-иконка микрофона.
-- **ИИ-голос** — говори ИИ-голосом вместо эффектов: w-okada или Voice Changer Engine на своём ПК, бесплатно и вживую, или ElevenLabs по своему ключу. Движок выбирается сам. См. [docs/AI_VOICE.md](docs/AI_VOICE.md)
+- **ИИ-голос** — говори ИИ-голосом вместо эффектов: Voice Changer Engine или w-okada на своём ПК, бесплатно и вживую, или ElevenLabs по своему ключу. Движок выбирается сам. См. [docs/AI_VOICE.md](docs/AI_VOICE.md)
+- **Установка движка в одну кнопку** — вкладка «ИИ-голос» скачивает Voice Changer Engine под твою видеокарту (NVIDIA RTX, NVIDIA постарше или AMD и Intel через DirectML), показывает прогресс и качает дальше, пока ты играешь. Запускает и останавливает движок мод сам
+- **Голоса просто кидаются в папку** — положи RVC-голос в папку голосов, `.pth` вместе с `.index` или скачанный `.zip` как есть, и он появится в галерее голосов и выберется сам, без перезапуска
+- **Свой голос** — кинь свои записи в папку и обучи голос прямо в игре; мод сначала проверит записи и скажет, чего не хватает
 - **API для других модов** — рация, маска или машина могут подменить голос на время и вернуть обратно; моды могут добавлять свои голоса в студию. См. [docs/API.md](docs/API.md)
 - **Серверная часть** — мод ставится и на сервер: разрешить или запретить изменение голоса, замутить игрока командой, раздавать свои голоса всем, кто зашёл
 - **Работает и без сервера** — всё, кроме серверной политики, живёт на клиенте
@@ -145,6 +152,7 @@ The full reference, including the API for other mods, is in [docs/API.md](docs/A
 2. Открой меню Simple Voice Chat и нажми **кнопку войсченджера** сверху.
 3. Выбери голос из сетки и задай силу. **Self Listen** проигрывает тебе твой же обработанный голос — слышно ровно то, что слышат другие.
 4. **J** включает и выключает эффект, ничего не открывая. Есть и вторая клавиша, для открытия студии напрямую, — по умолчанию не назначена; обе лежат в управлении Minecraft.
+5. Для ИИ-голоса открой вкладку **ИИ-голос** и нажми **Бесплатно на моём ПК**: мод сам поставит движок, от 0,25 до 2,7 ГБ в зависимости от видеокарты. Потом добавь голоса через **Папку голосов** или обучи **Свой голос**.
 
 Сервер для этого не нужен: на сервере без мода работает всё, кроме серверных правил.
 

@@ -47,9 +47,12 @@ USER_AGENT = {"User-Agent": "imsawiq/voice-changer runtime-check"}
 def main():
     # --ui opens the AI screens over the title screen and quits, without a world:
     # quick to run after a change to them, and the screenshots are the point.
-    global UI_ONLY
+    global UI_ONLY, GALLERY_DIR
     UI_ONLY = "--ui" in sys.argv
-    filters = [arg for arg in sys.argv[1:] if arg != "--ui"]
+    # --gallery DIR: screenshots for the mod pages, named, copied into DIR.
+    if "--gallery" in sys.argv:
+        GALLERY_DIR = os.path.abspath(sys.argv[sys.argv.index("--gallery") + 1])
+    filters = [arg for arg in sys.argv[1:] if arg not in ("--ui", "--gallery", GALLERY_DIR)]
     cases = [c for c in read_cases() if all(f in (c["loader"], c["mc"]) for f in filters)]
     if not cases:
         sys.exit(f"No case matches {filters}")
@@ -79,6 +82,16 @@ def main():
 ENGINE_ADDRESS = ("127.0.0.1", int(os.environ.get("VC_FAKE_ENGINE_PORT", "18899")))
 engine_requests = {"configure": 0, "convert": 0}
 UI_ONLY = False
+GALLERY_DIR = None
+# What the fake engine lists in gallery mode, so the voice gallery looks lived in.
+GALLERY_VOICES = [
+    ("rvc/deep_narrator", "Deep Narrator", "RVC v2 40k + index"),
+    ("rvc/anime_girl", "Anime Girl", "RVC v2 48k + index"),
+    ("rvc/old_wizard", "Old Wizard", "RVC v2 40k + index"),
+    ("rvc/radio_host", "Radio Host", "RVC v2 48k"),
+    ("rvc/robot", "Robot", "RVC v2 40k + index"),
+    ("rvc/my_voice", "My Voice", "RVC v2 48k + index, trained in game"),
+]
 # One training job, as the wizard sees it: idle until it is started, then
 # frozen part way through so the screenshot shows a running job.
 training = {"state": "idle", "name": ""}
@@ -100,6 +113,10 @@ class FakeEngine(http.server.BaseHTTPRequestHandler):
         status = {"protocol": 1, "name": "runtime-check fake engine", "version": "0", "device": "Fake GPU (CUDA)",
                   "features": ["dataset_check", "train"],
                   "models": [{"id": "fake/echo", "name": "Echo", "kind": "test"}]}
+        if GALLERY_DIR:
+            status.update(device="NVIDIA GeForce RTX 4060 Ti (CUDA)",
+                          features=["preview", "model_info", "dataset_check", "train"],
+                          models=[{"id": i, "name": n, "kind": k} for i, n, k in GALLERY_VOICES])
         self.answer(200, json.dumps(status).encode())
 
     def do_POST(self):
@@ -190,6 +207,8 @@ def attempt_case(case):
         file.write("%s:%d" % ENGINE_ADDRESS)
     if UI_ONLY:
         prepare_ui_only(game_dir)
+    if GALLERY_DIR:
+        prepare_gallery(game_dir)
 
     runtime_mods = fetch_runtime_mods(loader, mc)
     modern = mc.startswith("26.")
@@ -207,6 +226,12 @@ def attempt_case(case):
         mods_dir = os.path.join(game_dir, "mods")
         os.makedirs(mods_dir)
         task = ["runClient", f"-Pneoforge={NEOFORGE[mc]}"]
+    # VC_VOICE_MOD_JAR swaps in another build of the voice mod, such as a
+    # beta players run that Modrinth does not hand out as a release.
+    override = os.environ.get("VC_VOICE_MOD_JAR")
+    if override:
+        runtime_mods = [jar for jar in runtime_mods if VOICE_MOD.replace("-", "") not in
+                        os.path.basename(jar).replace("-", "").lower()] + [override]
     for jar in runtime_mods + [case["jar"]]:
         shutil.copy(jar, mods_dir)
 
@@ -220,6 +245,8 @@ def attempt_case(case):
         file.write(gradle_output)
 
     problems = report(game_dir, gradle_output)
+    if GALLERY_DIR:
+        collect_gallery(game_dir, case["name"])
     return problems, NATIVE_CRASH in gradle_output and not probe_started(game_dir)
 
 
@@ -228,6 +255,34 @@ def prepare_ui_only(game_dir):
     with open(os.path.join(game_dir, "options.txt"), "a") as file:
         file.write("lang:ru_ru\n")
     open(os.path.join(game_dir, "probe-ui-only"), "w").close()
+    write_demo_recordings(game_dir)
+
+
+def prepare_gallery(game_dir):
+    """A full HD window at the GUI scale most players use, in English, and the recordings the wizard shows."""
+    with open(os.path.join(game_dir, "options.txt"), "a") as file:
+        file.write("overrideWidth:1920\noverrideHeight:1080\nguiScale:3\nlang:en_us\n")
+    open(os.path.join(game_dir, "probe-gallery"), "w").close()
+    write_demo_recordings(game_dir)
+
+
+GALLERY_SHOTS = ("pv-activation-tab-voice-changer", "svc-menu")
+
+
+def collect_gallery(game_dir, case_name):
+    """Copies the gallery screenshots out under the names the probe gave them."""
+    log_path = os.path.join(game_dir, "logs", "latest.log")
+    target = os.path.join(GALLERY_DIR, case_name)
+    os.makedirs(target, exist_ok=True)
+    with open(log_path, encoding="utf-8", errors="replace") as file:
+        for match in re.finditer(r"\[probe\] screenshot (\S+): \S+ \S+ as (\S+\.png)", file.read()):
+            name, saved = match.groups()
+            if name.startswith("gallery-") or name in GALLERY_SHOTS:
+                shutil.copy(os.path.join(game_dir, "screenshots", saved), os.path.join(target, name + ".png"))
+    print(f"    gallery: {target}", flush=True)
+
+
+def write_demo_recordings(game_dir):
     training.update(state="idle", name="")
     voice = os.path.join(game_dir, "voice-changer", "datasets", "demo-voice")
     os.makedirs(voice)
