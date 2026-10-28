@@ -50,6 +50,9 @@ public final class VoiceChangerCommand {
                                     return builder.buildFuture();
                                 })
                                 .executes(VoiceChangerCommand::setRestriction)))
+                .then(Commands.literal("ai")
+                        .then(Commands.literal("on").executes(context -> setAiVoice(context.getSource(), true)))
+                        .then(Commands.literal("off").executes(context -> setAiVoice(context.getSource(), false))))
                 .then(Commands.literal("mute").then(Commands.argument(PLAYER_ARGUMENT, GameProfileArgument.gameProfile())
                         .executes(context -> setMuted(context, true))))
                 .then(Commands.literal("unmute").then(Commands.argument(PLAYER_ARGUMENT, GameProfileArgument.gameProfile())
@@ -75,6 +78,8 @@ public final class VoiceChangerCommand {
                         .withStyle(allowed ? ChatFormatting.GREEN : ChatFormatting.RED)), false);
         source.sendSuccess(() -> info("Voices allowed: "
                 + runtime.config().getAllowedVoices().configValue()), false);
+        source.sendSuccess(() -> info("AI voices: "
+                + (runtime.config().isAiVoiceAllowed() ? "allowed" : "denied")), false);
         source.sendSuccess(() -> info(runtime.mutes().size() + " player(s) muted, "
                 + runtime.presetLibrary().presets().size() + " shared voice(s)"), false);
         source.sendSuccess(() -> info(
@@ -132,6 +137,22 @@ public final class VoiceChangerCommand {
         runtime.broadcastPolicy();
         source.sendSuccess(() -> success("Voices allowed: " + rule.configValue() + "."), true);
         source.sendSuccess(() -> info(describeRule(rule)), false);
+        return 1;
+    }
+
+    private static int setAiVoice(CommandSourceStack source, boolean allowed) {
+        VoiceChangerServerRuntime runtime = VoiceChangerServerRuntime.INSTANCE;
+        try {
+            runtime.config().setAiVoiceAllowed(allowed);
+        } catch (IOException exception) {
+            // The change is live either way; what failed is remembering it.
+            source.sendFailure(Component.literal("Applied, but could not write the config: "
+                    + describe(exception) + ". It will revert on restart."));
+        }
+
+        runtime.broadcastPolicy();
+        source.sendSuccess(() -> success("AI voices " + (allowed ? "allowed" : "denied")
+                + " on this server."), true);
         return 1;
     }
 

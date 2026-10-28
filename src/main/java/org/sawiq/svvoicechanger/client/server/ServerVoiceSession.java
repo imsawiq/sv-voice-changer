@@ -99,8 +99,13 @@ public final class ServerVoiceSession {
         boolean wasAllowed = this.controller.isAllowedByServer();
         VoiceSourceRule previousRule = this.controller.getVoiceRule();
 
+        boolean hadAiVoice = this.controller.isAiAllowedByServer();
         this.controller.applyServerPolicy(
-                policy.allowed(), policy.reason(), policy.message(), policy.voices());
+                policy.allowed(), policy.reason(), policy.message(), policy.voices(), policy.aiVoice());
+
+        if (hadAiVoice && !this.controller.isAiAllowedByServer() && this.controller.aiVoice().isSelected()) {
+            sendChatMessage(Component.translatable("svvoicechanger.server.ai_blocked"));
+        }
 
         // Told in chat rather than the action bar: a player whose voice changer
         // just stopped working needs to be able to scroll back and read why.
@@ -137,7 +142,7 @@ public final class ServerVoiceSession {
     private void endSession() {
         this.greeted = false;
         removeSharedPresets();
-        this.controller.applyServerPolicy(true, PolicyReason.ALLOWED, "", VoiceSourceRule.ALL);
+        this.controller.applyServerPolicy(true, PolicyReason.ALLOWED, "", VoiceSourceRule.ALL, true);
     }
 
     private void removeSharedPresets() {

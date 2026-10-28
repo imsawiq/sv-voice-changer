@@ -33,6 +33,103 @@ final class SimpleVoiceTarget extends Target {
         return connection != null && (boolean) Reflect.call(connection, "isInitialized");
     }
 
+    /** MicThreadMixin's sendAudio hook is optional, so it is counted rather than assumed. */
+    @Override
+    long micHookCalls() throws ReflectiveOperationException {
+        return (long) Reflect.call(controller(), "micHookCalls");
+    }
+
+    /** Why the hook might not run: was it merged into MicThread, and is that thread reading a microphone. */
+    @Override
+    String describeMicHook() throws ReflectiveOperationException {
+        StringBuilder text = new StringBuilder("merged:");
+        for (Method method : Reflect.type("de.maxhenkel.voicechat.voice.client.MicThread").getDeclaredMethods()) {
+            if (method.getName().contains("svvoicechanger") || method.getName().contains("routeThroughAiVoice")) {
+                text.append(' ').append(method.getName());
+            }
+        }
+        Object client = Reflect.call(Reflect.type("de.maxhenkel.voicechat.voice.client.ClientManager"), "getClient");
+        Object micThread = client == null ? null : Reflect.call(client, "getMicThread");
+        text.append(" | micThread=").append(micThread);
+        if (micThread != null) {
+            text.append(" running=").append(Reflect.field(micThread, "running"))
+                    .append(" locked=").append(Reflect.field(micThread, "microphoneLocked"));
+            Object states = Reflect.call(Reflect.type("de.maxhenkel.voicechat.voice.client.ClientManager"),
+                    "getPlayerStateManager");
+            text.append(" disabled=").append(Reflect.call(states, "isDisabled"))
+                    .append(" muted=").append(Reflect.call(states, "isMuted"));
+            Object mic = Reflect.field(micThread, "mic");
+            text.append(" mic=").append(mic);
+            if (mic != null) {
+                text.append(" started=").append(Reflect.call(mic, "isStarted"));
+            }
+        }
+        return text.toString();
+    }
+
+    @Override
+    String engineKindPackage() {
+        return "svvoicechanger.client.ai.engine.";
+    }
+
+    /**
+     * Voice activation at the lowest threshold, with voice activity detection
+     * off where the installed version has it: detection would hold back room
+     * noise, which is all there is to send while nobody speaks.
+     */
+    @Override
+    Runnable sendOnRoomNoise() throws ReflectiveOperationException {
+        Object config = Reflect.staticField("de.maxhenkel.voicechat.VoicechatClient", "CLIENT_CONFIG");
+        List<Object[]> previous = new ArrayList<>();
+
+        Object type = Reflect.field(config, "microphoneActivationType");
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        Object voice = Enum.valueOf((Class) Reflect.type("de.maxhenkel.voicechat.voice.client.MicrophoneActivationType"), "VOICE");
+        previous.add(new Object[]{type, Reflect.call(type, "get")});
+        Reflect.call(type, "set", voice);
+
+        Object threshold = Reflect.field(config, "voiceActivationThreshold");
+        previous.add(new Object[]{threshold, Reflect.call(threshold, "get")});
+        Reflect.call(threshold, "set", -127.0D);
+
+        // A fresh client starts with voice chat off and muted until the player
+        // finishes Simple Voice Chat's first-run setup, and then never reads
+        // the microphone at all. The setup exists from 2.6 on.
+        try {
+            Object onboarding = Reflect.field(config, "onboardingFinished");
+            previous.add(new Object[]{onboarding, Reflect.call(onboarding, "get")});
+            Reflect.call(onboarding, "set", true);
+        } catch (NoSuchFieldException ignored) {
+            // No first-run setup on this version.
+        }
+        Object states = Reflect.call(Reflect.type("de.maxhenkel.voicechat.voice.client.ClientManager"),
+                "getPlayerStateManager");
+        boolean wasDisabled = (boolean) Reflect.call(states, "isDisabled");
+        boolean wasMuted = (boolean) Reflect.call(states, "isMuted");
+        Reflect.call(states, "setDisabled", false);
+        Reflect.call(states, "setMuted", false);
+
+        try {
+            Object detection = Reflect.field(config, "vad");
+            previous.add(new Object[]{detection, Reflect.call(detection, "get")});
+            Reflect.call(detection, "set", false);
+        } catch (NoSuchFieldException ignored) {
+            // Versions before voice activity detection send noise anyway.
+        }
+
+        return () -> {
+            try {
+                for (Object[] entry : previous) {
+                    Reflect.call(entry[0], "set", entry[1]);
+                }
+                Reflect.call(states, "setDisabled", wasDisabled);
+                Reflect.call(states, "setMuted", wasMuted);
+            } catch (ReflectiveOperationException exception) {
+                throw new IllegalStateException(exception);
+            }
+        };
+    }
+
     /** Minecraft's own key binds: each one present, named, and under a heading that is not a raw key. */
     @Override
     List<String> bindingProblems(Minecraft mc) throws ReflectiveOperationException {

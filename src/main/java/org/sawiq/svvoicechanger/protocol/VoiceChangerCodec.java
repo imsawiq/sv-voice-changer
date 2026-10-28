@@ -51,10 +51,17 @@ public final class VoiceChangerCodec {
      * @param message the server's own wording, which wins over {@code reason}
      *                when it is not empty
      * @param voices  how much freedom the player has over their voice here
+     * @param aiVoice whether an AI voice may be used here
      */
-    public record Policy(boolean allowed, PolicyReason reason, String message, VoiceSourceRule voices) {
+    public record Policy(boolean allowed, PolicyReason reason, String message, VoiceSourceRule voices,
+                         boolean aiVoice) {
     }
 
+    /**
+     * The AI voice flag goes last. A client from before it existed stops
+     * reading after the voice rule and never sees it, and a server from
+     * before it never writes it, which reads as allowed.
+     */
     public static byte[] encodePolicy(Policy policy) {
         return write(out -> {
             out.writeByte(VoiceChangerChannel.TYPE_POLICY);
@@ -62,6 +69,7 @@ public final class VoiceChangerCodec {
             out.writeInt(policy.reason().code());
             out.writeUTF(truncate(policy.message(), MAX_REASON_LENGTH));
             out.writeInt(policy.voices().code());
+            out.writeBoolean(policy.aiVoice());
         });
     }
 
@@ -120,7 +128,8 @@ public final class VoiceChangerCodec {
             PolicyReason reason = PolicyReason.byCode(in.readInt());
             String message = truncate(in.readUTF(), MAX_REASON_LENGTH);
             VoiceSourceRule voices = VoiceSourceRule.byCode(in.readInt());
-            return new Policy(allowed, reason, message, voices);
+            boolean aiVoice = in.available() <= 0 || in.readBoolean();
+            return new Policy(allowed, reason, message, voices, aiVoice);
         }
     }
 

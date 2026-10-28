@@ -1,7 +1,5 @@
 package org.sawiq.svvoicechanger.client.ui;
 
-import java.awt.Desktop;
-import java.net.URI;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -85,7 +83,7 @@ public final class UpdateAvailableScreen extends Screen {
 
     private void openPage(String target) {
         try {
-            Desktop.getDesktop().browse(URI.create(target));
+            LinkOpener.open(target);
         } catch (Exception exception) {
             SvVoiceChanger.LOGGER.warn("Unable to open the update download page {}", target, exception);
         }

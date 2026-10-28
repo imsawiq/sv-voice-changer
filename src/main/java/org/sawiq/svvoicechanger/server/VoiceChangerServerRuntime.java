@@ -142,18 +142,19 @@ public final class VoiceChangerServerRuntime {
      */
     private VoiceChangerCodec.Policy policyFor(ServerPlayer player) {
         VoiceSourceRule voices = this.config.getAllowedVoices();
+        boolean aiVoice = this.config.isAiVoiceAllowed();
 
         if (!this.config.isAllowed()) {
             return new VoiceChangerCodec.Policy(
-                    false, PolicyReason.SERVER_DISABLED, this.config.getDeniedMessage(), voices);
+                    false, PolicyReason.SERVER_DISABLED, this.config.getDeniedMessage(), voices, aiVoice);
         }
         if (this.mutes.isMuted(player.getUUID())) {
-            return new VoiceChangerCodec.Policy(false, PolicyReason.PLAYER_MUTED, "", voices);
+            return new VoiceChangerCodec.Policy(false, PolicyReason.PLAYER_MUTED, "", voices, aiVoice);
         }
         if (!ServerPermissions.canUse(player)) {
-            return new VoiceChangerCodec.Policy(false, PolicyReason.NO_PERMISSION, "", voices);
+            return new VoiceChangerCodec.Policy(false, PolicyReason.NO_PERMISSION, "", voices, aiVoice);
         }
-        return new VoiceChangerCodec.Policy(true, PolicyReason.ALLOWED, "", voices);
+        return new VoiceChangerCodec.Policy(true, PolicyReason.ALLOWED, "", voices, aiVoice);
     }
 
     // --- Channel ------------------------------------------------------------

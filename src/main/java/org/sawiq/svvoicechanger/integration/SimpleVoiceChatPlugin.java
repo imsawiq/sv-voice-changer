@@ -80,6 +80,15 @@ public final class SimpleVoiceChatPlugin implements VoicechatPlugin {
             return;
         }
 
+        // The microphone thread already swapped in the AI voice. It goes out
+        // as it is, unless another mod holds an override such as a radio,
+        // which still applies on top through the usual path below.
+        if (controller.isAiVoiceActive() && controller.api().winningOverrideOwner() == null) {
+            controller.getAudioProcessor().countAiFrame(rawAudio.length);
+            controller.publishAiFrame(rawAudio);
+            return;
+        }
+
         // Copied only when something is going to change it, which is the
         // effective answer rather than the player's switch: a mod holding an
         // override can have the voice changed with that switch off.

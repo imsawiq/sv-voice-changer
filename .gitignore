@@ -20,3 +20,5 @@ replay_*.log
 /tools/runtime-check/.work/
 /tools/runtime-check/*/build/
 /tools/runtime-check/*/.gradle/
+__pycache__/
+buildSrc/.gradle/

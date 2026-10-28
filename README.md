@@ -12,6 +12,7 @@
 - **Voice Changer Studio** — pitch, formant, EQ, distortion, echo, tremolo, robot layer, autotune, and more.
 - **Saved profiles** — create, load, delete, and share custom presets.
 - **Native menu integration** — opens from the Simple Voice Chat menu and changes the talking HUD microphone while enabled.
+- **AI voice** — speak with an AI voice instead of the effects: w-okada or the Voice Changer Engine on your own PC, free and live, or ElevenLabs with your own key. The engine is picked automatically. See [docs/AI_VOICE.md](docs/AI_VOICE.md)
 - **API for other mods** — a radio, a mask or a machine can apply a voice while it is in use and hand it back; mods can also add their own voices to the studio. See [docs/API.md](docs/API.md)
 - **Server side** — install it on the server too, to allow or deny the voice changer, mute individual players by command, and hand out your own voices to everyone connected
 - **Works without a server** — everything except the server policy runs on your client alone
@@ -101,6 +102,7 @@ The full reference, including the API for other mods, is in [docs/API.md](docs/A
 - **Студия войсченджера** — pitch, formant, EQ, distortion, echo, tremolo, robot layer, autotune и другие параметры.
 - **Сохранение профилей** — создание, загрузка, удаление и обмен кастомными пресетами.
 - **Нативная интеграция** — студия открывается из меню Simple Voice Chat, а при включённом эффекте меняется HUD-иконка микрофона.
+- **ИИ-голос** — говори ИИ-голосом вместо эффектов: w-okada или Voice Changer Engine на своём ПК, бесплатно и вживую, или ElevenLabs по своему ключу. Движок выбирается сам. См. [docs/AI_VOICE.md](docs/AI_VOICE.md)
 - **API для других модов** — рация, маска или машина могут подменить голос на время и вернуть обратно; моды могут добавлять свои голоса в студию. См. [docs/API.md](docs/API.md)
 - **Серверная часть** — мод ставится и на сервер: разрешить или запретить изменение голоса, замутить игрока командой, раздавать свои голоса всем, кто зашёл
 - **Работает и без сервера** — всё, кроме серверной политики, живёт на клиенте

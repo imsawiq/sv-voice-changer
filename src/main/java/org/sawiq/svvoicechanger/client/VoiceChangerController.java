@@ -3,9 +3,18 @@ package org.sawiq.svvoicechanger.client;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.UnaryOperator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.sawiq.svvoicechanger.SvVoiceChanger;
+import org.sawiq.svvoicechanger.client.ai.AiVoiceController;
+import org.sawiq.svvoicechanger.client.ai.AiVoiceSettings;
+import org.sawiq.svvoicechanger.client.ai.AiVoiceSettingsStore;
+import org.sawiq.svvoicechanger.client.ai.audio.AudioFrames;
+import org.sawiq.svvoicechanger.client.ai.runtime.AiVoiceRuntime;
+import org.sawiq.svvoicechanger.client.ai.runtime.AiVoiceStream;
+import org.sawiq.svvoicechanger.client.compat.ClientScreens;
 import org.sawiq.svvoicechanger.client.api.VoiceChangerApi;
 import org.sawiq.svvoicechanger.client.api.VoicePreset;
 import org.sawiq.svvoicechanger.client.api.internal.VoiceChangerApiImpl;
@@ -21,6 +30,10 @@ import org.sawiq.svvoicechanger.client.model.VoiceChangerState;
 import org.sawiq.svvoicechanger.client.model.VoiceProfile;
 import org.sawiq.svvoicechanger.client.preset.VoiceChangerPresetStore;
 import org.sawiq.svvoicechanger.client.server.ServerVoiceSession;
+import org.sawiq.svvoicechanger.client.ui.AiModelPickerScreen;
+import org.sawiq.svvoicechanger.client.ui.AiTextScreen;
+import org.sawiq.svvoicechanger.client.ui.AiTrainScreen;
+import org.sawiq.svvoicechanger.client.ui.AiVoiceScreen;
 import org.sawiq.svvoicechanger.client.ui.VoiceChangerStudioScreen;
 import org.sawiq.svvoicechanger.protocol.PolicyReason;
 import org.sawiq.svvoicechanger.protocol.VoiceSourceRule;
@@ -37,12 +50,30 @@ public final class VoiceChangerController {
     private final SelfListenBus selfListenBus = new SelfListenBus();
     private final SimpleVoiceChatAudioProcessor audioProcessor =
             new SimpleVoiceChatAudioProcessor(this.selfListenBus);
+    private final AiVoiceRuntime aiRuntime = new AiVoiceRuntime();
+    /** Microphone hook calls, for {@link #micHookCalls()}. */
+    private final AtomicLong micHookCalls = new AtomicLong();
     private final SelfListenMonitor selfListenMonitor = new SelfListenMonitor(
             this.selfListenBus,
             this::getActiveVoice,
             this::reportInputLevel,
-            failure -> setSelfListenEnabled(false)
+            failure -> setSelfListenEnabled(false),
+            new SelfListenMonitor.AiPreview() {
+                @Override
+                public boolean isActive() {
+                    AiVoiceController ai = VoiceChangerController.this.aiVoice;
+                    return ai != null && ai.isPreviewing();
+                }
+
+                @Override
+                public short[] convert(short[] mono) {
+                    return VoiceChangerController.this.aiVoice.previewFrame(mono);
+                }
+            }
     );
+    private AiVoiceController aiVoice;
+    private AiVoiceStream.Activity lastAiActivity = AiVoiceStream.Activity.IDLE;
+    private volatile boolean aiAllowedByServer = true;
 
     private volatile boolean initialized;
     private volatile boolean effectEnabled;
@@ -82,9 +113,14 @@ public final class VoiceChangerController {
                 .resolve(SvVoiceChanger.MOD_ID)
                 .resolve("presets");
         this.presetStore = new VoiceChangerPresetStore(presetDirectory);
+        this.aiVoice = new AiVoiceController(
+                new AiVoiceSettingsStore(configDirectory.resolve(SvVoiceChanger.MOD_ID).resolve("ai")),
+                this.aiRuntime);
+        this.aiVoice.load();
         this.initialized = true;
         reloadSavedPresetNames();
         loadAutosaveOrDefault();
+        this.aiVoice.refresh();
         // Published last: a mod calling in from its own thread the instant the
         // API appears must find a controller that is already fully wired up.
         VoiceChangerApiRegistry.publish(new VoiceChangerApiImpl(this));
@@ -98,6 +134,7 @@ public final class VoiceChangerController {
         VoiceChangerApiRegistry.withdraw();
         this.api.clear();
         this.selfListenMonitor.stop();
+        this.aiVoice.shutdown();
         persistAutosave();
         this.initialized = false;
         refreshActiveVoice();
@@ -112,6 +149,113 @@ public final class VoiceChangerController {
         if (!isStudioPreviewActive() && this.selfListenEnabled) {
             setSelfListenEnabled(false);
         }
+        this.aiVoice.tick();
+        this.aiVoice.setPreviewWanted(this.selfListenEnabled || isVoiceModMenuOpen());
+        this.aiVoice.setStudioOpen(isAiScreenOpen());
+        reportAiVoiceEvents();
+    }
+
+    /**
+     * Tells the player, above the hotbar, what the AI voice is doing when it
+     * is not obvious: a phrase engine is silent while it converts, and a
+     * failing engine sends nothing at all.
+     */
+    private void reportAiVoiceEvents() {
+        String failure = this.aiVoice.takeFailure();
+        if (failure != null) {
+            // The engine's own words are for the log; the player only needs
+            // to know the voice hiccuped and that it is being dealt with.
+            if (!failure.equals(AiVoiceStream.FAILURE_BUSY)) {
+                SvVoiceChanger.LOGGER.info("AI voice: {}", failure);
+            }
+            ClientScreens.sendActionBarMessage(Component.translatable("svvoicechanger.ai.actionbar.failed",
+                    Component.translatable(failure.equals(AiVoiceStream.FAILURE_BUSY)
+                            ? failure
+                            : "svvoicechanger.ai.failure.generic")));
+        }
+
+        String trained = this.aiVoice.takeFinishedTraining();
+        if (trained != null) {
+            ClientScreens.sendChatMessage(Component.translatable("svvoicechanger.ai.train.finished_chat", trained));
+        }
+
+        AiVoiceStream.Activity activity = this.aiVoice.activity();
+        if (activity == AiVoiceStream.Activity.CONVERTING && this.lastAiActivity != activity) {
+            ClientScreens.sendActionBarMessage(Component.translatable("svvoicechanger.ai.actionbar.converting"));
+        }
+        this.lastAiActivity = activity;
+    }
+
+    // --- AI voice -----------------------------------------------------------
+
+    /** Engines, settings and status of the AI voice, for the studio's AI tab. */
+    public AiVoiceController aiVoice() {
+        return this.aiVoice;
+    }
+
+    /** Changes the AI voice settings; the voice source switch also changes what is active. */
+    public void updateAiSettings(UnaryOperator<AiVoiceSettings> change) {
+        this.aiVoice.update(change);
+        refreshActiveVoice();
+    }
+
+    /** Whether this server lets players speak with an AI voice. */
+    public boolean isAiAllowedByServer() {
+        return this.aiAllowedByServer && this.voiceRule != VoiceSourceRule.SERVER_ONLY;
+    }
+
+    /** Whether the AI voice decides what is sent, rather than the effects. */
+    public boolean isAiVoiceActive() {
+        return this.aiRuntime.isActive();
+    }
+
+    /**
+     * Called by Simple Voice Chat's microphone thread every tick, right before
+     * it decides what to send. While the AI voice is off the frame passes
+     * through untouched; while it is on, what comes back replaces it, and
+     * {@code null} means send nothing this tick.
+     *
+     * @param raw the microphone frame while the player is talking, {@code null}
+     *            while they are not
+     */
+    public short[] onMicFrame(short[] raw) {
+        this.micHookCalls.incrementAndGet();
+        if (!this.aiRuntime.isActive() || (raw != null && raw.length != AudioFrames.FRAME_SAMPLES)) {
+            return raw;
+        }
+        if (raw != null) {
+            reportInputLevel(AudioFrames.peakOf(raw));
+        }
+        return this.aiRuntime.onFrame(raw);
+    }
+
+    /**
+     * How often the microphone hook has run. Its mixin is optional, so a
+     * Simple Voice Chat version that renamed {@code sendAudio} would leave it
+     * silently unattached; the runtime check reads this to catch that.
+     */
+    public long micHookCalls() {
+        return this.micHookCalls.get();
+    }
+
+    /** The AI frame actually sent, for the self-listen monitor. */
+    public void publishAiFrame(short[] frame) {
+        if (this.selfListenBus.isActive()) {
+            this.selfListenBus.write(frame, 1);
+        }
+    }
+
+    /**
+     * The AI voice runs when the voice changer is on, the player picked the AI
+     * voice as the source, and the server allows both. A server that allows
+     * only its own shared voices is taken to mean no AI voices either.
+     */
+    private boolean isAiWanted() {
+        return this.initialized
+                && this.effectEnabled
+                && this.allowedByServer
+                && isAiAllowedByServer()
+                && this.aiVoice.isSelected();
     }
 
     /** What the current server has said about the voice changer. */
@@ -138,9 +282,9 @@ public final class VoiceChangerController {
         return this.activeVoice;
     }
 
-    /** Whether the voice is being changed at all, override and server policy included. */
+    /** Whether the voice is being changed at all, override, AI voice and server policy included. */
     public boolean isEffectActive() {
-        return this.activeVoice.active();
+        return this.activeVoice.active() || this.aiRuntime.isActive();
     }
 
     /** Whether the player has the effect switched on, ignoring anything on top of it. */
@@ -211,12 +355,13 @@ public final class VoiceChangerController {
      * way to make a modified one comply.</p>
      */
     public void applyServerPolicy(
-            boolean allowed, PolicyReason reason, String message, VoiceSourceRule voices) {
+            boolean allowed, PolicyReason reason, String message, VoiceSourceRule voices, boolean aiAllowed) {
         this.serverDenialReason = allowed ? PolicyReason.ALLOWED : reason;
         this.serverDenialMessage = allowed || message == null ? "" : message;
 
-        boolean ruleChanged = this.voiceRule != voices;
+        boolean ruleChanged = this.voiceRule != voices || this.aiAllowedByServer != aiAllowed;
         this.voiceRule = voices;
+        this.aiAllowedByServer = aiAllowed;
         if (ruleChanged) {
             refreshActiveVoice();
         }
@@ -242,6 +387,9 @@ public final class VoiceChangerController {
                 ? this.api.resolve(this.effectEnabled, this.allowedByServer,
                         isSelectedVoiceAllowed(), this.playerProfile, this.strength)
                 : ActiveVoice.INACTIVE;
+        if (this.aiVoice != null) {
+            this.aiVoice.setWanted(isAiWanted());
+        }
     }
 
     /** A mod pushed an override or released one. */
@@ -524,8 +672,26 @@ public final class VoiceChangerController {
         }
     }
 
+    /**
+     * Simple Voice Chat's own settings, where its microphone test plays the
+     * processed microphone back; with the AI voice on, that is the AI
+     * preview. Its screens are recognised by package.
+     */
+    private static boolean isVoiceModMenuOpen() {
+        Object screen = MinecraftScreenAccess.current(Minecraft.getInstance());
+        return screen != null && screen.getClass().getName().startsWith("de.maxhenkel.voicechat");
+    }
+
+    /** The AI tab and the screens it opens, which want the engine running for previews and training. */
+    private static boolean isAiScreenOpen() {
+        Object screen = MinecraftScreenAccess.current(Minecraft.getInstance());
+        return screen instanceof AiVoiceScreen || screen instanceof AiTrainScreen
+                || screen instanceof AiModelPickerScreen || screen instanceof AiTextScreen;
+    }
+
     private boolean isStudioPreviewActive() {
-        return MinecraftScreenAccess.current(Minecraft.getInstance()) instanceof VoiceChangerStudioScreen;
+        Object screen = MinecraftScreenAccess.current(Minecraft.getInstance());
+        return screen instanceof VoiceChangerStudioScreen || screen instanceof AiVoiceScreen;
     }
 
     private void showToggleStatus() {

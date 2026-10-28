@@ -24,12 +24,13 @@ public final class ServerVoiceChangerConfig {
     private static final String KEY_DENIED_MESSAGE = "denied-message";
     private static final String KEY_SHARE_PRESETS = "share-presets";
     private static final String KEY_ALLOWED_VOICES = "allowed-voices";
+    private static final String KEY_ALLOW_AI_VOICE = "allow-ai-voice";
 
     private static final String COMMENT = """
             Simple Voice Changer, server settings.
 
             allow-voice-changer  Whether players may change their voice here.
-                                 Toggled at runtime with /voicechanger on|off.
+                                 Toggled at runtime with /svvoicechanger on|off.
             denied-message       Shown to a player whose voice changer is off
                                  because of this server. Leave empty to use the
                                  message built into the client, which is
@@ -49,6 +50,12 @@ public final class ServerVoiceChangerConfig {
                                  This is about keeping a server listenable, not
                                  about safety. A mod holding a temporary voice,
                                  such as a radio, is not affected.
+            allow-ai-voice       Whether players may speak with an AI voice
+                                 (a local voice model or ElevenLabs). An AI
+                                 voice can imitate a real person, so a server
+                                 where that matters can switch it off here or
+                                 with /svvoicechanger ai on|off. server-only
+                                 above also rules AI voices out.
 
             The voice is changed on the player's own machine before it is sent,
             so these settings are a policy an unmodified client obeys. They are
@@ -60,6 +67,7 @@ public final class ServerVoiceChangerConfig {
     private volatile String deniedMessage = "";
     private volatile boolean sharePresets = true;
     private volatile VoiceSourceRule allowedVoices = VoiceSourceRule.ALL;
+    private volatile boolean aiVoiceAllowed = true;
 
     public ServerVoiceChangerConfig(Path directory) {
         this.file = directory.resolve(FILE_NAME);
@@ -81,6 +89,10 @@ public final class ServerVoiceChangerConfig {
         return this.allowedVoices;
     }
 
+    public boolean isAiVoiceAllowed() {
+        return this.aiVoiceAllowed;
+    }
+
     /** @throws IOException if the file exists but cannot be read */
     public void load() throws IOException {
         if (Files.exists(this.file)) {
@@ -94,6 +106,7 @@ public final class ServerVoiceChangerConfig {
             this.sharePresets = parseBoolean(properties.getProperty(KEY_SHARE_PRESETS), true);
             this.allowedVoices = VoiceSourceRule.byConfigValue(
                     properties.getProperty(KEY_ALLOWED_VOICES), VoiceSourceRule.ALL);
+            this.aiVoiceAllowed = parseBoolean(properties.getProperty(KEY_ALLOW_AI_VOICE), true);
         }
 
         save();
@@ -109,6 +122,11 @@ public final class ServerVoiceChangerConfig {
         save();
     }
 
+    public void setAiVoiceAllowed(boolean allowed) throws IOException {
+        this.aiVoiceAllowed = allowed;
+        save();
+    }
+
     private void save() throws IOException {
         Files.createDirectories(this.file.getParent());
 
@@ -117,6 +135,7 @@ public final class ServerVoiceChangerConfig {
         properties.setProperty(KEY_DENIED_MESSAGE, this.deniedMessage);
         properties.setProperty(KEY_SHARE_PRESETS, Boolean.toString(this.sharePresets));
         properties.setProperty(KEY_ALLOWED_VOICES, this.allowedVoices.configValue());
+        properties.setProperty(KEY_ALLOW_AI_VOICE, Boolean.toString(this.aiVoiceAllowed));
 
         try (OutputStream output = Files.newOutputStream(this.file)) {
             properties.store(output, COMMENT);

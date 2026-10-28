@@ -15,6 +15,7 @@ public final class StrengthSlider extends AbstractSliderButton {
 
     private final IntSupplier valueSupplier;
     private final IntConsumer valueConsumer;
+    private boolean valueOnly;
 
     public StrengthSlider(int x, int y, int width, int height, IntSupplier valueSupplier, IntConsumer valueConsumer) {
         super(x, y, width, height, Component.translatable(LABEL_KEY), 0.0D);
@@ -29,9 +30,18 @@ public final class StrengthSlider extends AbstractSliderButton {
         updateMessage();
     }
 
+    /** Shows just the percentage, for a settings row that already names it on the left. */
+    public StrengthSlider valueOnly() {
+        this.valueOnly = true;
+        updateMessage();
+        return this;
+    }
+
     @Override
     protected void updateMessage() {
-        setMessage(Component.translatable(LABEL_KEY).copy().append(": " + percent() + "%"));
+        setMessage(this.valueOnly
+                ? Component.literal(percent() + "%")
+                : Component.translatable(LABEL_KEY).copy().append(": " + percent() + "%"));
     }
 
     @Override

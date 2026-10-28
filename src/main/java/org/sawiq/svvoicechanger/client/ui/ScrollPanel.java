@@ -2,8 +2,8 @@ package org.sawiq.svvoicechanger.client.ui;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import org.sawiq.svvoicechanger.client.ui.compat.StudioGraphics;
 
 /**
  * Vertical scrolling for a list of absolutely positioned widgets.
@@ -80,7 +80,7 @@ public final class ScrollPanel {
         return Math.max(1, this.bottom - this.top);
     }
 
-    public void renderScrollbar(GuiGraphics context, int rightEdge) {
+    public void renderScrollbar(StudioGraphics graphics, int rightEdge) {
         if (this.maxScroll <= 0) {
             return;
         }
@@ -90,19 +90,35 @@ public final class ScrollPanel {
         int thumbTravel = Math.max(1, trackHeight - thumbHeight);
         int thumbY = this.top + this.scrollOffset * thumbTravel / this.maxScroll;
 
-        context.fill(rightEdge, this.top, rightEdge + SCROLLBAR_WIDTH, this.bottom, TRACK_COLOR);
-        context.fill(rightEdge, thumbY, rightEdge + SCROLLBAR_WIDTH, thumbY + thumbHeight, THUMB_COLOR);
+        graphics.fill(rightEdge, this.top, rightEdge + SCROLLBAR_WIDTH, this.bottom, TRACK_COLOR);
+        graphics.fill(rightEdge, thumbY, rightEdge + SCROLLBAR_WIDTH, thumbY + thumbHeight, THUMB_COLOR);
     }
 
+    /**
+     * Hides what scrolled out of view and brings back only what this panel
+     * hid itself: a widget the screen hid or greyed out on purpose, such as a
+     * control the server locked, stays that way when it scrolls back in.
+     */
     private void apply() {
         for (Entry entry : this.entries) {
             AbstractWidget widget = entry.widget;
             int y = entry.baseY - this.scrollOffset;
             widget.setY(y);
 
-            boolean visible = y + widget.getHeight() >= this.top && y <= this.bottom;
-            widget.visible = visible;
-            widget.active = visible;
+            // Only whole widgets: a half-scrolled one would hang over the header or footer,
+            // and cutting it off takes drawing that differs between Minecraft versions.
+            boolean inView = y >= this.top && y + widget.getHeight() <= this.bottom;
+            if (!inView && !entry.hiddenByScroll) {
+                entry.hiddenByScroll = true;
+                entry.wasVisible = widget.visible;
+                entry.wasActive = widget.active;
+                widget.visible = false;
+                widget.active = false;
+            } else if (inView && entry.hiddenByScroll) {
+                entry.hiddenByScroll = false;
+                widget.visible = entry.wasVisible;
+                widget.active = entry.wasActive;
+            }
         }
     }
 
@@ -110,6 +126,16 @@ public final class ScrollPanel {
         return Math.max(min, Math.min(max, value));
     }
 
-    private record Entry(AbstractWidget widget, int baseY) {
+    private static final class Entry {
+        final AbstractWidget widget;
+        final int baseY;
+        boolean hiddenByScroll;
+        boolean wasVisible;
+        boolean wasActive;
+
+        Entry(AbstractWidget widget, int baseY) {
+            this.widget = widget;
+            this.baseY = baseY;
+        }
     }
 }

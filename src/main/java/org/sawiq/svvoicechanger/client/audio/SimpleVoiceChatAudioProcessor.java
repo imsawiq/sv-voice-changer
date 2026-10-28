@@ -77,6 +77,14 @@ public final class SimpleVoiceChatAudioProcessor {
         return ProcessingResult.PROCESSED;
     }
 
+    /**
+     * Counts a frame the AI voice sent past this processor, so the studio's
+     * diagnostics line keeps showing that audio is flowing.
+     */
+    public void countAiFrame(int frames) {
+        countBlock(frames);
+    }
+
     /** What the chain is currently seeing and doing, for the studio to display. */
     public VoiceDiagnostics diagnostics() {
         return new VoiceDiagnostics(

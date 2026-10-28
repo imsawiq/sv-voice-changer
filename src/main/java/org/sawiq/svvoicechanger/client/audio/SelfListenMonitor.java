@@ -46,7 +46,20 @@ public final class SelfListenMonitor {
     private final Supplier<ActiveVoice> activeVoice;
     private final Consumer<Double> levelReporter;
     private final Consumer<Exception> failureHandler;
+    private final AiPreview aiPreview;
     private final VoiceProcessor processor = new VoiceProcessor();
+
+    /**
+     * The studio's preview of the AI voice: while it is active, the monitor's
+     * own capture goes through the AI engine instead of the effects, so the
+     * player hears the AI voice without having to transmit.
+     */
+    public interface AiPreview {
+        boolean isActive();
+
+        /** @return the converted frame, or {@code null} for silence */
+        short[] convert(short[] mono);
+    }
 
     private volatile int lastBlockFrames;
     private volatile int blocksPerSecond;
@@ -61,12 +74,14 @@ public final class SelfListenMonitor {
             SelfListenBus bus,
             Supplier<ActiveVoice> activeVoice,
             Consumer<Double> levelReporter,
-            Consumer<Exception> failureHandler
+            Consumer<Exception> failureHandler,
+            AiPreview aiPreview
     ) {
         this.bus = bus;
         this.activeVoice = activeVoice;
         this.levelReporter = levelReporter;
         this.failureHandler = failureHandler;
+        this.aiPreview = aiPreview;
     }
 
     public Mode mode() {
@@ -147,7 +162,6 @@ public final class SelfListenMonitor {
                     Thread.sleep(IDLE_SLEEP_MILLIS);
                     continue;
                 }
-
                 if (capture == null) {
                     capture = openCapture();
                     this.mode = capture != null ? Mode.OWN_CAPTURE : Mode.UNAVAILABLE;
@@ -165,6 +179,15 @@ public final class SelfListenMonitor {
                 }
 
                 this.levelReporter.accept(peakOf(samples, captured));
+                if (this.aiPreview.isActive()) {
+                    short[] converted = captured == BLOCK_SAMPLES ? this.aiPreview.convert(samples) : null;
+                    countBlock(captured);
+                    if (converted != null) {
+                        writeSamples(output, converted, converted.length, playbackBytes);
+                    }
+                    continue;
+                }
+
                 ActiveVoice voice = this.activeVoice.get();
                 if (voice.active()) {
                     this.processor.process(samples, captured, 1, voice.profile(), voice.strength());

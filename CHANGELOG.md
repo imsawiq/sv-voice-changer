@@ -1,5 +1,76 @@
 # Changelog
 
+## 1.3.0
+
+### EN
+
+#### Added
+- **AI voice.** The studio has a second tab where the voice changer speaks with
+  an AI voice instead of the effect presets. Three engines, picked
+  automatically or by hand: w-okada's Voice Changer and the Voice Changer
+  Engine run on your own PC, for free and live; ElevenLabs uses your own API
+  key and speaks each phrase about a second after you finish it. Other players
+  need nothing. See [docs/AI_VOICE.md](docs/AI_VOICE.md).
+- **The tail of a sentence is not cut off.** An AI voice lags behind the
+  microphone, so the voice changer keeps sending after the push-to-talk key is
+  let go until the converted audio is out.
+- **Your real voice stays out of the chat while the AI voice is on**, even when
+  the engine stops answering. The tab and the action bar say what happened.
+- **Servers can switch AI voices off** with `allow-ai-voice=false` or
+  `/svvoicechanger ai off`. An older server simply allows them.
+- **Train your own voice in the game.** Name it, drop 10-30 minutes of
+  recordings into its folder, let the engine check them and press Train; the
+  new voice shows up in the gallery when it is done. Needs an NVIDIA card with
+  6 GB or more.
+- **The engine installs and runs itself.** One click installs it, the mod
+  starts it in the background when it is needed, keeps it warm for a few
+  minutes after, and stops it with the game. Voices and recordings live in the
+  game folder under `voice-changer`, so removing the engine keeps them.
+- **The engine download fits your graphics card**: about 2.1 GB for NVIDIA RTX,
+  2.7 GB for older NVIDIA, 0.25 GB for AMD, Intel or no graphics card. The
+  install screen says which before you agree.
+
+#### Changed
+- **The studio looks like Plasmo Voice's own settings.** Tabs along the top,
+  a label on the left and the control on the right in every row, sections with
+  titles. The effects tab, the AI voice tab, voice training and the guides all
+  share it. The pitch diagnostics line moved to the advanced view.
+
+### RU
+
+#### Добавлено
+- **ИИ-голос.** В студии вторая вкладка: войсченджер говорит ИИ-голосом вместо
+  пресетов эффектов. Три движка, выбираются сами или вручную: Voice Changer от
+  w-okada и Voice Changer Engine работают на твоём ПК, бесплатно и вживую;
+  ElevenLabs работает по твоему API-ключу и проговаривает каждую фразу примерно
+  через секунду после того, как ты её закончишь. Другим игрокам ничего не
+  нужно. Подробности в [docs/AI_VOICE.md](docs/AI_VOICE.md).
+- **Конец фразы не обрезается.** ИИ-голос отстаёт от микрофона, поэтому
+  войсченджер продолжает отправку после того, как отпущена кнопка, пока
+  обработанный звук не уйдёт целиком.
+- **Пока включён ИИ-голос, твой настоящий голос не попадает в чат**, даже если
+  движок перестал отвечать. Вкладка и строка над хотбаром говорят, что
+  случилось.
+- **Сервер может запретить ИИ-голоса**: `allow-ai-voice=false` или
+  `/svvoicechanger ai off`. Старый сервер их просто разрешает.
+- **Обучение своего голоса прямо в игре.** Назови голос, положи в его папку
+  10-30 минут записей, дай движку их проверить и нажми «Обучить»; готовый
+  голос появится в галерее. Нужна видеокарта NVIDIA с 6 ГБ памяти и больше.
+- **Движок ставится и работает сам.** Установка в один клик, мод запускает
+  его в фоне, когда он нужен, держит ещё несколько минут и закрывает вместе с
+  игрой. Голоса и записи лежат в папке игры, в `voice-changer`, поэтому
+  удаление движка их не трогает.
+- **Движок скачивается под твою видеокарту**: около 2,1 ГБ для NVIDIA RTX,
+  2,7 ГБ для старых NVIDIA, 0,25 ГБ для AMD, Intel или без видеокарты. Окно
+  установки говорит это до того, как ты согласишься.
+
+#### Изменено
+- **Студия выглядит как настройки самого Plasmo Voice.** Вкладки сверху, в
+  каждой строке подпись слева и кнопка справа, разделы с заголовками. Так
+  устроены вкладка эффектов, вкладка ИИ-голоса, обучение голоса и инструкции.
+  Строка диагностики тона переехала в тонкую настройку.
+
+
 ## 1.2.5
 
 ### EN

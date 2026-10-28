@@ -12,14 +12,17 @@ the voice changer.
     python tools/runtime-check/check.py fabric       cases for one loader
 """
 import glob
+import http.server
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import threading
 import urllib.parse
 import urllib.request
+import wave
 
 # --- What this repository checks ---------------------------------------------
 TARGET = "probe.SimpleVoiceTarget"
@@ -42,7 +45,11 @@ USER_AGENT = {"User-Agent": "imsawiq/voice-changer runtime-check"}
 
 
 def main():
-    filters = sys.argv[1:]
+    # --ui opens the AI screens over the title screen and quits, without a world:
+    # quick to run after a change to them, and the screenshots are the point.
+    global UI_ONLY
+    UI_ONLY = "--ui" in sys.argv
+    filters = [arg for arg in sys.argv[1:] if arg != "--ui"]
     cases = [c for c in read_cases() if all(f in (c["loader"], c["mc"]) for f in filters)]
     if not cases:
         sys.exit(f"No case matches {filters}")
@@ -50,12 +57,90 @@ def main():
         case["jar"] = newest_jar(case["pattern"])
         case["name"] = f"{case['loader']}-{case['mc']}-{os.path.basename(case['jar'])[:-4]}"
 
+    engine = start_fake_engine()
     results = [(case, run_case(case)) for case in cases]
+    engine.shutdown()
 
     print("\n== Summary")
     for case, problems in results:
         print(f"  {'PASS' if not problems else 'FAIL'}  {case['name']}")
     sys.exit(1 if any(problems for _, problems in results) else 0)
+
+
+# --- A stand-in for the Voice Changer Engine ---------------------------------
+#
+# Speaks protocol 1 from docs/VOICE_ENGINE.md, so the probe can switch the AI
+# voice on and watch it start and send. It plays
+# the microphone back with its polarity flipped, which sounds the same and
+# proves the audio made the round trip.
+
+# Not the engine's default port: a game the player has open may be running
+# the real engine there. The probe points the test client here instead.
+ENGINE_ADDRESS = ("127.0.0.1", int(os.environ.get("VC_FAKE_ENGINE_PORT", "18899")))
+engine_requests = {"configure": 0, "convert": 0}
+UI_ONLY = False
+# One training job, as the wizard sees it: idle until it is started, then
+# frozen part way through so the screenshot shows a running job.
+training = {"state": "idle", "name": ""}
+
+
+class FakeEngine(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def do_GET(self):
+        if self.path == "/v1/train/status":
+            running = training["state"] == "running"
+            status = {"state": training["state"], "name": training["name"], "stage": "training" if running else "",
+                      "stageIndex": 4 if running else 0, "stageCount": 6, "percent": 37.5 if running else 0,
+                      "epoch": 75 if running else 0, "epochs": 200 if running else 0,
+                      "etaSeconds": 1420 if running else -1, "lastLog": "", "error": None}
+            return self.answer(200, json.dumps(status).encode())
+        if self.path != "/v1/status":
+            return self.answer(404, b'{"error": "unknown path"}')
+        status = {"protocol": 1, "name": "runtime-check fake engine", "version": "0", "device": "Fake GPU (CUDA)",
+                  "features": ["dataset_check", "train"],
+                  "models": [{"id": "fake/echo", "name": "Echo", "kind": "test"}]}
+        self.answer(200, json.dumps(status).encode())
+
+    def do_POST(self):
+        body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+        if self.path == "/v1/configure":
+            engine_requests["configure"] += 1
+            return self.answer(200, b"{}")
+        if self.path == "/v1/dataset/check":
+            report = {"files": 2, "minutes": 3.4, "tooQuiet": 0, "clipped": 0, "noisy": 0,
+                      "verdict": "too_short", "tips": ["Record at least 10 minutes of speech."]}
+            return self.answer(200, json.dumps(report).encode())
+        if self.path == "/v1/train":
+            training.update(state="running", name=json.loads(body)["name"])
+            return self.answer(202, b'{"started": true}')
+        if self.path == "/v1/train/cancel":
+            training.update(state="cancelled")
+            return self.answer(200, b"{}")
+        if self.path.startswith("/v1/convert"):
+            engine_requests["convert"] += 1
+            flipped = bytearray(len(body))
+            for i in range(0, len(body) - 1, 2):
+                sample = int.from_bytes(body[i:i + 2], "little", signed=True)
+                flipped[i:i + 2] = max(-32768, min(32767, -sample)).to_bytes(2, "little", signed=True)
+            return self.answer(200, bytes(flipped), "application/octet-stream")
+        self.answer(404, b'{"error": "unknown path"}')
+
+    def answer(self, status, body, content_type="application/json"):
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args):
+        pass
+
+
+def start_fake_engine():
+    server = http.server.ThreadingHTTPServer(ENGINE_ADDRESS, FakeEngine)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
 
 
 def read_cases():
@@ -101,6 +186,10 @@ def attempt_case(case):
     shutil.copytree(ensure_world(mc), os.path.join(game_dir, "saves", "probe"))
     with open(os.path.join(game_dir, "options.txt"), "w") as file:
         file.write(GAME_OPTIONS)
+    with open(os.path.join(game_dir, "probe-engine-address"), "w") as file:
+        file.write("%s:%d" % ENGINE_ADDRESS)
+    if UI_ONLY:
+        prepare_ui_only(game_dir)
 
     runtime_mods = fetch_runtime_mods(loader, mc)
     modern = mc.startswith("26.")
@@ -134,6 +223,23 @@ def attempt_case(case):
     return problems, NATIVE_CRASH in gradle_output and not probe_started(game_dir)
 
 
+def prepare_ui_only(game_dir):
+    """The probe's marker, two short recordings for the training wizard, and Russian, the players' usual language."""
+    with open(os.path.join(game_dir, "options.txt"), "a") as file:
+        file.write("lang:ru_ru\n")
+    open(os.path.join(game_dir, "probe-ui-only"), "w").close()
+    training.update(state="idle", name="")
+    voice = os.path.join(game_dir, "voice-changer", "datasets", "demo-voice")
+    os.makedirs(voice)
+    for name in ("take_01.wav", "take_02.wav"):
+        with wave.open(os.path.join(voice, name), "wb") as recording:
+            recording.setnchannels(1)
+            recording.setsampwidth(2)
+            recording.setframerate(48000)
+            recording.writeframes(bytes(48000 * 2))
+    os.makedirs(os.path.join(game_dir, "voice-changer", "datasets", "second-voice"))
+
+
 # Windows' STATUS_ACCESS_VIOLATION, as Gradle prints a process exit value.
 NATIVE_CRASH = "exit value -1073741819"
 
@@ -154,6 +260,8 @@ def report(game_dir, gradle_output):
     for line in log.splitlines():
         if "[probe] " in line:
             print("   ", line.split("]: ", 1)[-1][:300])
+    print(f"    fake engine so far: {engine_requests['configure']} stream(s) configured, "
+          f"{engine_requests['convert']} chunk(s) converted")
 
     problems = []
     if "[probe] PASS" not in log:
