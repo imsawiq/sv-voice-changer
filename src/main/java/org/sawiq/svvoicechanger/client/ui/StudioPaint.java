@@ -32,6 +32,15 @@ final class StudioPaint {
         graphics.fill(x, y, x + (int) Math.round(width * clamped), y + height, color);
     }
 
+    /** A block sliding across the track, for work whose total is not known; one pass every 1.6 seconds. */
+    static void sweep(StudioGraphics graphics, int x, int y, int width, int height, long nowMillis, int color) {
+        int block = Math.max(8, width / 4);
+        int travel = width + block;
+        int start = x - block + (int) (nowMillis % 1600L * travel / 1600L);
+        graphics.fill(x, y, x + width, y + height, BAR_TRACK);
+        graphics.fill(Math.max(x, start), y, Math.min(x + width, start + block), y + height, color);
+    }
+
     /** Draws at most {@code maxLines} lines of text wrapped to a width; the last one ends in "..." if cut. */
     static void paragraph(StudioGraphics graphics, Component text, int x, int y, int width, int maxLines, int color) {
         List<String> lines = wrap(graphics, text.getString(), width);

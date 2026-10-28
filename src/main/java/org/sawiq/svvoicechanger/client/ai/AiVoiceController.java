@@ -1,11 +1,14 @@
 package org.sawiq.svvoicechanger.client.ai;
 
 import java.io.IOException;
+import java.net.http.HttpTimeoutException;
 import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import org.sawiq.svvoicechanger.SvVoiceChanger;
 import org.sawiq.svvoicechanger.client.ai.audio.PreviewPlayer;
 import org.sawiq.svvoicechanger.client.ai.engine.AiVoiceEngine;
@@ -28,7 +32,9 @@ import org.sawiq.svvoicechanger.client.ai.engine.elevenlabs.ElevenLabsEngine;
 import org.sawiq.svvoicechanger.client.ai.engine.local.DatasetReport;
 import org.sawiq.svvoicechanger.client.ai.engine.local.TrainingStatus;
 import org.sawiq.svvoicechanger.client.ai.engine.local.VoiceEngine;
+import org.sawiq.svvoicechanger.client.ai.engine.local.VoiceFolder;
 import org.sawiq.svvoicechanger.client.ai.engine.wokada.WOkadaEngine;
+import org.sawiq.svvoicechanger.client.ai.install.EngineFiles;
 import org.sawiq.svvoicechanger.client.ai.install.EngineInstaller;
 import org.sawiq.svvoicechanger.client.ai.install.EngineProcess;
 import org.sawiq.svvoicechanger.client.ai.runtime.AiVoiceRuntime;
@@ -61,6 +67,8 @@ public final class AiVoiceController {
     private static final long ENGINE_RETRY_BASE_MILLIS = 10_000L;
     private static final int ENGINE_MAX_QUICK_EXITS = 3;
     private static final long TRAINING_POLL_MILLIS = 1_000L;
+    /** The voices folder is looked at this often while the studio is open, and five times less often otherwise. */
+    private static final long VOICE_FOLDER_CHECK_MILLIS = 2_000L;
 
     private final AiVoiceSettingsStore store;
     private final AiVoiceRuntime runtime;
@@ -104,6 +112,20 @@ public final class AiVoiceController {
     private volatile boolean previewWanted;
     private EngineSetup previewSetup;
     private volatile String startFailure;
+    private volatile boolean loadingVoice;
+
+    private final VoiceFolder voiceFolder = new VoiceFolder(EngineFiles.modelsDirectory());
+    private final AtomicBoolean voiceFolderCheckRunning = new AtomicBoolean();
+    private long voiceFolderCheckedAt;
+    /** Only touched by the one folder check that runs at a time. */
+    private long voiceFolderFingerprint = Long.MIN_VALUE;
+    /** Set when the folder changed, until the engine has listed its voices again. */
+    private volatile boolean voiceFolderChanged;
+    /** The engine's voices the last time it listed them; null until it first did. */
+    private volatile Set<String> knownVoiceIds;
+    /** A voice that appeared after the folder changed, waiting for the client thread to pick it. */
+    private volatile EngineModel arrivedVoice;
+    private volatile String addedVoiceName;
     private volatile long lastProbeAt;
     private boolean saveFailureLogged;
 
@@ -123,13 +145,14 @@ public final class AiVoiceController {
         } catch (IOException exception) {
             SvVoiceChanger.LOGGER.warn("Could not read the AI voice settings; starting from defaults", exception);
         }
+        this.installer.resumeInterruptedInstall();
     }
 
     public void shutdown() {
         this.wanted = false;
         this.runtime.stop();
         this.preview.stop();
-        this.installer.cancel();
+        this.installer.interrupt();
         this.engineProcess.stop();
         this.probes.shutdownNow();
         this.lifecycle.shutdownNow();
@@ -145,6 +168,8 @@ public final class AiVoiceController {
     public void tick() {
         manageInstalledEngine();
         pollTraining();
+        watchVoiceFolder();
+        pickArrivedVoice();
         if (this.runtime.hasGivenUp()) {
             SvVoiceChanger.LOGGER.warn("The AI voice engine stopped answering; looking for another");
             EngineKind failed = this.runningKind;
@@ -210,6 +235,11 @@ public final class AiVoiceController {
     /** Why the last attempt to start a stream failed, or {@code null}. */
     public String startFailure() {
         return this.startFailure;
+    }
+
+    /** Whether the last start ran out of time while the engine loaded the voice; it is tried again. */
+    public boolean isLoadingVoice() {
+        return this.loadingVoice && !this.runtime.isActive();
     }
 
     public AiVoiceStream.Activity activity() {
@@ -600,6 +630,80 @@ public final class AiVoiceController {
         Map<EngineKind, EngineStatus> next = new EnumMap<>(this.statuses);
         next.put(status.kind(), status);
         this.statuses = next;
+        if (status.kind() == EngineKind.VOICE_ENGINE) {
+            noteListedVoices(status);
+        }
+    }
+
+    // --- The voices folder ---------------------------------------------------
+
+    /**
+     * Looks at the voices folder every few seconds on a background thread:
+     * archives are unpacked, and a change has the engine asked again, so a
+     * voice dropped in shows up by itself.
+     */
+    private void watchVoiceFolder() {
+        long now = System.currentTimeMillis();
+        long interval = this.studioOpen ? VOICE_FOLDER_CHECK_MILLIS : VOICE_FOLDER_CHECK_MILLIS * 5;
+        if (now - this.voiceFolderCheckedAt < interval || !this.voiceFolderCheckRunning.compareAndSet(false, true)) {
+            return;
+        }
+        this.voiceFolderCheckedAt = now;
+        submitProbe(() -> {
+            try {
+                this.voiceFolder.tidy();
+                long fingerprint = this.voiceFolder.fingerprint();
+                boolean firstLook = this.voiceFolderFingerprint == Long.MIN_VALUE;
+                if (fingerprint != this.voiceFolderFingerprint) {
+                    this.voiceFolderFingerprint = fingerprint;
+                    if (!firstLook) {
+                        this.voiceFolderChanged = true;
+                        refresh();
+                    }
+                }
+            } finally {
+                this.voiceFolderCheckRunning.set(false);
+            }
+        });
+    }
+
+    /**
+     * Remembers which voices the engine lists. When the folder just changed
+     * and the list grew, the newest voice is put aside to be picked: someone
+     * who just dropped a voice in wants to hear it, not go and find it.
+     */
+    private void noteListedVoices(EngineStatus status) {
+        if (status.availability() != EngineStatus.Availability.READY
+                && status.availability() != EngineStatus.Availability.NO_MODEL) {
+            return;
+        }
+        Set<String> known = this.knownVoiceIds;
+        Set<String> listed = status.models().stream().map(EngineModel::id).collect(Collectors.toSet());
+        if (known != null && this.voiceFolderChanged) {
+            this.voiceFolderChanged = false;
+            status.models().stream()
+                    .filter(model -> !known.contains(model.id()))
+                    .reduce((first, second) -> second)
+                    .ifPresent(model -> this.arrivedVoice = model);
+        }
+        this.knownVoiceIds = listed;
+    }
+
+    private void pickArrivedVoice() {
+        EngineModel arrived = this.arrivedVoice;
+        if (arrived == null) {
+            return;
+        }
+        this.arrivedVoice = null;
+        update(settings -> settings.withVoiceEngine(settings.voiceEngine().withModel(arrived.id())));
+        this.addedVoiceName = arrived.name();
+    }
+
+    /** The name of a voice that was just added to the folder and picked, once; otherwise null. */
+    public String takeAddedVoice() {
+        String name = this.addedVoiceName;
+        this.addedVoiceName = null;
+        return name;
     }
 
     // --- Stream lifecycle --------------------------------------------------
@@ -656,8 +760,17 @@ public final class AiVoiceController {
             this.runningKind = kind;
             this.runningSetup = setup;
             this.startFailure = null;
+            this.loadingVoice = false;
+        } catch (HttpTimeoutException exception) {
+            // The engine is still loading the voice. The idle probe comes back
+            // in a few seconds and tries again, so this is a wait, not an error.
+            stopStream();
+            this.startFailure = null;
+            this.loadingVoice = true;
+            SvVoiceChanger.LOGGER.info("The AI voice with {} is still loading; trying again shortly", kind.id());
         } catch (IOException | RuntimeException exception) {
             stopStream();
+            this.loadingVoice = false;
             this.startFailure = exception.getMessage() == null
                     ? exception.getClass().getSimpleName()
                     : exception.getMessage();

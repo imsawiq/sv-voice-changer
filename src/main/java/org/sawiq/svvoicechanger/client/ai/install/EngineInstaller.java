@@ -51,10 +51,18 @@ public final class EngineInstaller {
     /**
      * @param step    translation key suffix of the current step, empty when idle
      * @param percent 0..100 for downloads with a known size, -1 otherwise
-     * @param detail  the last line uv printed, or the failure, never translated
+     * @param detail    the last line uv printed, or the failure, never translated
+     * @param startedAt when this install began, in epoch millis; 0 when nothing is being installed
      */
-    public record Progress(State state, String step, int percent, String detail) {
+    public record Progress(State state, String step, int percent, String detail, long startedAt) {
+        /** 1-based position of the current step in {@link #STEPS}, or 0 before the first. */
+        public int stepNumber() {
+            return STEPS.indexOf(this.step) + 1;
+        }
     }
+
+    /** The install steps in order, as their translation key suffixes. */
+    public static final List<String> STEPS = List.of("download_uv", "download_engine", "python", "packages");
 
     private static final HttpClient DOWNLOADS = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15))
@@ -65,10 +73,13 @@ public final class EngineInstaller {
     private static final long DISK_CHECK_INTERVAL_MILLIS = 5_000L;
 
     private volatile Progress progress;
+    /** The last install's end, FAILED or INSTALLED, until someone takes it to tell the player. */
+    private volatile Progress outcome;
     private volatile long lastDiskCheck = System.currentTimeMillis();
     /** Detected once, in the background: nvidia-smi can take a few seconds to answer. */
     private volatile PackageSet packageSet;
     private volatile Process child;
+    private volatile long installStartedAt;
     private volatile boolean cancelled;
     private Thread worker;
 
@@ -110,19 +121,59 @@ public final class EngineInstaller {
         return progress().state() == State.INSTALLED;
     }
 
+    /**
+     * Starts installing in the background. A note is left in the engine folder
+     * until the install ends, so one cut short by closing the game carries on
+     * at the next start: the player already agreed, and uv keeps what it
+     * downloaded, so nothing is fetched twice.
+     */
     public synchronized void install() {
         if (this.progress.state() == State.INSTALLING || !EngineFiles.isSupported()) {
             return;
         }
+        try {
+            Files.createDirectories(EngineFiles.root());
+            Files.writeString(EngineFiles.pendingInstallMarker(), EngineFiles.ENGINE_VERSION, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            SvVoiceChanger.LOGGER.warn("Could not note the engine install for the next start", exception);
+        }
         this.cancelled = false;
+        this.installStartedAt = System.currentTimeMillis();
         this.worker = new Thread(this::runInstall, "Voice changer engine install");
         this.worker.setDaemon(true);
-        this.progress = new Progress(State.INSTALLING, "start", -1, "");
+        this.progress = installing("start", -1, "");
         this.worker.start();
     }
 
+    /** Carries on with an install the game was closed during; does nothing otherwise. */
+    public void resumeInterruptedInstall() {
+        if (EngineFiles.isSupported() && Files.isRegularFile(EngineFiles.pendingInstallMarker()) && !isInstalled()) {
+            SvVoiceChanger.LOGGER.info("Carrying on with the voice changer engine install from the last session");
+            install();
+        }
+    }
+
+    /** The install that just ended, once; null while nothing new ended. */
+    public Progress takeOutcome() {
+        Progress ended = this.outcome;
+        this.outcome = null;
+        return ended;
+    }
+
+    /** Stops the install; the player chose to, so it is not carried on at the next start either. */
     public void cancel() {
         this.cancelled = true;
+        forgetPendingInstall();
+        stopChild();
+    }
+
+    /** Stops the install for the game closing; the note stays, so the next start carries on. */
+    public void interrupt() {
+        this.cancelled = true;
+        stopChild();
+    }
+
+    private void stopChild() {
         Process process = this.child;
         if (process != null) {
             process.descendants().forEach(ProcessHandle::destroyForcibly);
@@ -161,24 +212,49 @@ public final class EngineInstaller {
                     "-r", packages.requirementsFile()));
 
             writeMarker(packages);
-            this.progress = new Progress(State.INSTALLED, "", 100, "");
+            finish(new Progress(State.INSTALLED, "", 100, "", 0L));
         } catch (IOException | RuntimeException exception) {
             String reason = this.cancelled ? "cancelled" : describe(exception);
             if (!this.cancelled) {
                 SvVoiceChanger.LOGGER.warn("Voice changer engine install failed: {}", reason);
             }
-            this.progress = new Progress(State.FAILED, "", -1, reason);
+            finish(new Progress(State.FAILED, "", -1, reason, 0L));
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            this.progress = new Progress(State.FAILED, "", -1, "cancelled");
+            finish(new Progress(State.FAILED, "", -1, "cancelled", 0L));
         } finally {
             this.child = null;
         }
     }
 
+    /**
+     * A cancel is the player's own doing and needs no message afterwards. A
+     * failure is told instead of retried at every start: the player sees why
+     * and presses Install again when it suits them.
+     */
+    private void finish(Progress ended) {
+        this.progress = ended;
+        if (!this.cancelled) {
+            forgetPendingInstall();
+            this.outcome = ended;
+        }
+    }
+
+    private Progress installing(String step, int percent, String detail) {
+        return new Progress(State.INSTALLING, step, percent, detail, this.installStartedAt);
+    }
+
+    private static void forgetPendingInstall() {
+        try {
+            Files.deleteIfExists(EngineFiles.pendingInstallMarker());
+        } catch (IOException exception) {
+            SvVoiceChanger.LOGGER.warn("Could not clear the engine install note", exception);
+        }
+    }
+
     /** Streams to a temporary file, hashing as it goes, and refuses a file that does not match. */
     private Path download(String step, String url, String expectedSha256) throws IOException, InterruptedException {
-        this.progress = new Progress(State.INSTALLING, step, 0, "");
+        this.progress = installing(step, 0, "");
         HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofMinutes(30)).GET().build();
         HttpResponse<InputStream> response = DOWNLOADS.send(request, HttpResponse.BodyHandlers.ofInputStream());
         if (response.statusCode() != 200) {
@@ -201,7 +277,7 @@ public final class EngineInstaller {
                 digest.update(buffer, 0, read);
                 done += read;
                 int percent = total > 0 ? (int) (done * 100 / total) : -1;
-                this.progress = new Progress(State.INSTALLING, step, percent, megabytes(done, total));
+                this.progress = installing(step, percent, megabytes(done, total));
             }
         } catch (IOException exception) {
             Files.deleteIfExists(target);
@@ -241,7 +317,7 @@ public final class EngineInstaller {
      * engine's own folder. Its output is the progress detail, line by line.
      */
     private void runUv(String step, List<String> arguments) throws IOException, InterruptedException {
-        this.progress = new Progress(State.INSTALLING, step, -1, "");
+        this.progress = installing(step, -1, "");
         List<String> command = Stream.concat(Stream.of(EngineFiles.uvExecutable().toString()), arguments.stream()).toList();
         ProcessBuilder builder = new ProcessBuilder(command)
                 .directory(EngineFiles.engineDirectory().toFile())
@@ -270,7 +346,7 @@ public final class EngineInstaller {
                 Files.writeString(log, line + System.lineSeparator(), StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 if (!line.isBlank()) {
-                    this.progress = new Progress(State.INSTALLING, step, -1, shorten(line.strip()));
+                    this.progress = installing(step, -1, shorten(line.strip()));
                 }
             }
         }
@@ -287,12 +363,12 @@ public final class EngineInstaller {
 
     private Progress idle() {
         if (!EngineFiles.isSupported()) {
-            return new Progress(State.UNSUPPORTED, "", -1, "");
+            return new Progress(State.UNSUPPORTED, "", -1, "", 0L);
         }
         return installedVersion().isPresent()
                 && Files.isRegularFile(EngineFiles.python())
-                ? new Progress(State.INSTALLED, "", 100, "")
-                : new Progress(State.NOT_INSTALLED, "", -1, "");
+                ? new Progress(State.INSTALLED, "", 100, "", 0L)
+                : new Progress(State.NOT_INSTALLED, "", -1, "", 0L);
     }
 
     private static Optional<String> installedVersion() {

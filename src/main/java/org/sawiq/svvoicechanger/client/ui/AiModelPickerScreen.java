@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
@@ -29,14 +30,17 @@ public final class AiModelPickerScreen extends CompatScreen {
     private static final int MAX_WIDTH = 300;
 
     private final Screen parent;
-    private final List<EngineModel> models;
-    private final String selectedId;
+    private List<EngineModel> models;
+    private String selectedId;
     private final Consumer<EngineModel> onPick;
     private final ScrollPanel scrollPanel = new ScrollPanel();
     private final List<Button> listButtons = new ArrayList<>();
 
     private final List<ExtraButton> extraButtons = new ArrayList<>();
     private Consumer<EngineModel> preview;
+    private Supplier<List<EngineModel>> liveModels;
+    private Supplier<String> liveSelectedId;
+    private Component emptyText = Component.translatable("svvoicechanger.ai.picker.empty");
 
     private EditBox searchField;
     private String query = "";
@@ -97,6 +101,37 @@ public final class AiModelPickerScreen extends CompatScreen {
     public AiModelPickerScreen withPreview(Consumer<EngineModel> preview) {
         this.preview = preview;
         return this;
+    }
+
+    /**
+     * Keeps the list in step with the engine while the screen is open, so a
+     * voice dropped into the folder shows up without leaving and coming back.
+     */
+    public AiModelPickerScreen withLiveModels(Supplier<List<EngineModel>> models, Supplier<String> selectedId) {
+        this.liveModels = models;
+        this.liveSelectedId = selectedId;
+        return this;
+    }
+
+    /** What to say while there is nothing to pick, such as where voices come from. */
+    public AiModelPickerScreen withEmptyText(Component text) {
+        this.emptyText = text;
+        return this;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (this.liveModels == null) {
+            return;
+        }
+        List<EngineModel> current = this.liveModels.get();
+        String selected = this.liveSelectedId.get();
+        if (!current.equals(this.models) || !selected.equals(this.selectedId)) {
+            this.models = List.copyOf(current);
+            this.selectedId = selected;
+            rebuildList();
+        }
     }
 
     /** Adds an action under the list, such as opening the folder new voices go into. */
@@ -172,11 +207,13 @@ public final class AiModelPickerScreen extends CompatScreen {
         StudioFrame.paintChrome(graphics, this.width, this.height, this.title, LIST_TOP - 4);
         this.scrollPanel.renderScrollbar(graphics, this.width - 7);
 
-        if (filtered().isEmpty()) {
-            graphics.centeredText(Component.translatable(this.models.isEmpty()
-                            ? "svvoicechanger.ai.picker.empty"
-                            : "svvoicechanger.ai.picker.no_match"),
-                    this.width / 2, LIST_TOP + 6, 0xFFAAAAAA);
+        if (this.models.isEmpty()) {
+            int width = listWidth();
+            StudioPaint.paragraph(graphics, this.emptyText, (this.width - width) / 2, LIST_TOP + 6, width, 4,
+                    StudioPaint.GREY);
+        } else if (filtered().isEmpty()) {
+            graphics.centeredText(Component.translatable("svvoicechanger.ai.picker.no_match"),
+                    this.width / 2, LIST_TOP + 6, StudioPaint.GREY);
         }
     }
 

@@ -79,6 +79,11 @@ public final class VoiceEngine implements AiVoiceEngine.Live {
             status = EngineHttp.parseObject(response.body());
         } catch (ConnectException | HttpConnectTimeoutException exception) {
             return EngineStatus.of(kind(), Availability.NOT_RUNNING, address.get().toString());
+        } catch (HttpTimeoutException exception) {
+            // It took the connection but did not answer in time: an engine
+            // still loading its libraries, not a broken one. Shown as an error
+            // it told players something was wrong when a moment later it was not.
+            return EngineStatus.of(kind(), Availability.STARTING, "");
         } catch (IOException exception) {
             return EngineStatus.of(kind(), Availability.FAILED, exception.getMessage());
         } catch (InterruptedException exception) {

@@ -86,6 +86,11 @@ public final class EngineFiles {
         return root().resolve("installed.properties");
     }
 
+    /** Present while an install the player agreed to has not finished. */
+    static Path pendingInstallMarker() {
+        return root().resolve("install-pending");
+    }
+
     static Path logDirectory() {
         return root().resolve("logs");
     }

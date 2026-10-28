@@ -53,6 +53,8 @@ public final class AiVoiceScreen extends CompatScreen {
 
     private SettingsList list;
     private EngineKind shownEngine;
+    /** The installer state the layout was built for; the rows differ while it installs. */
+    private EngineInstaller.State shownInstallState;
     /** Kept across openings, like the studio's own mode: whoever went advanced wants it again. */
     private static boolean advancedMode;
 
@@ -106,6 +108,10 @@ public final class AiVoiceScreen extends CompatScreen {
     @Override
     public void tick() {
         super.tick();
+        if (ai().installer().progress().state() != this.shownInstallState) {
+            init();
+            return;
+        }
         refreshLabels();
     }
 
@@ -142,6 +148,7 @@ public final class AiVoiceScreen extends CompatScreen {
      */
     private void buildSimple() {
         addStatus();
+        addInstallSection();
 
         this.list.category(Component.translatable("svvoicechanger.ai.section.main"));
         addOption("svvoicechanger.ai.row.enabled", "svvoicechanger.ai.simple.switch.desc", this::toggleAiVoice,
@@ -164,7 +171,6 @@ public final class AiVoiceScreen extends CompatScreen {
             addVoiceRows(target);
         }
 
-        addInstallProgress();
         this.list.gap(6);
         this.list.row(button("svvoicechanger.ai.simple.advanced", "svvoicechanger.ai.simple.advanced.desc",
                 () -> switchMode(true)));
@@ -186,6 +192,11 @@ public final class AiVoiceScreen extends CompatScreen {
             this.list.option(Component.translatable("svvoicechanger.ai.voices.own"),
                     button("svvoicechanger.ai.button.train", "svvoicechanger.ai.voices.own.desc", this::openTraining));
         }
+        if (engine == EngineKind.VOICE_ENGINE) {
+            this.list.option(Component.translatable("svvoicechanger.ai.install.models"),
+                    button("svvoicechanger.ai.button.open", "svvoicechanger.ai.install.models.desc",
+                            this::openModelsFolder));
+        }
         this.list.option(Component.translatable("svvoicechanger.ai.voices.where"),
                 button("svvoicechanger.ai.button.open", "svvoicechanger.ai.voices.where.desc",
                         () -> openWhereToGetVoices(engine)));
@@ -203,12 +214,72 @@ public final class AiVoiceScreen extends CompatScreen {
         }, () -> AiStatusText.nowColor(this.addon), 3);
     }
 
-    /** What the installer is doing, while it is doing something or has just failed. */
-    private void addInstallProgress() {
-        this.list.text(() -> {
-            Component line = installProgressLine();
-            return line != null ? line : Component.empty();
-        }, () -> StudioPaint.YELLOW, 1);
+    /**
+     * While the engine installs: which step of how many, a bar, how long it
+     * has been going, and that the screen can be closed meanwhile. A failed
+     * install says why and offers to try again. Nothing otherwise.
+     *
+     * <p>The rows change with the installer's state, so {@link #tick()}
+     * lays the screen out again when that state moves on.</p>
+     */
+    private void addInstallSection() {
+        EngineInstaller installer = ai().installer();
+        EngineInstaller.Progress progress = installer.progress();
+        this.shownInstallState = progress.state();
+        boolean cancelled = progress.state() == EngineInstaller.State.FAILED && progress.detail().equals("cancelled");
+        if (progress.state() != EngineInstaller.State.INSTALLING
+                && (progress.state() != EngineInstaller.State.FAILED || cancelled)) {
+            return;
+        }
+
+        this.list.category(Component.translatable("svvoicechanger.ai.install.section"));
+        if (progress.state() == EngineInstaller.State.FAILED) {
+            this.list.text(() -> Component.translatable("svvoicechanger.ai.install.failed",
+                    installer.progress().detail()), () -> StudioPaint.RED, 3);
+            this.list.row(button("svvoicechanger.ai.install.retry", "svvoicechanger.ai.install.retry.desc",
+                    installer::install));
+            return;
+        }
+
+        this.list.text(() -> installStepLine(installer.progress()), () -> StudioPaint.WHITE, 1);
+        this.list.custom(10, (graphics, x, top, width) -> paintInstallBar(graphics, installer.progress(), x, top + 2, width));
+        this.list.text(() -> installDetailLine(installer.progress()), () -> StudioPaint.GREY, 2);
+        this.list.text(() -> Component.translatable("svvoicechanger.ai.install.background"), () -> StudioPaint.TEXT, 3);
+        this.list.row(button("svvoicechanger.ai.install.cancel", "svvoicechanger.ai.install.cancel.desc",
+                installer::cancel));
+    }
+
+    /** "Step 4 of 4: installing the neural network libraries, 42%". */
+    private static Component installStepLine(EngineInstaller.Progress progress) {
+        Component step = Component.translatable("svvoicechanger.ai.install.step." + progress.step());
+        Component line = progress.stepNumber() == 0
+                ? step
+                : Component.translatable("svvoicechanger.ai.install.step_of",
+                        progress.stepNumber(), EngineInstaller.STEPS.size(), step);
+        return progress.percent() >= 0 ? line.copy().append(", " + progress.percent() + "%") : line;
+    }
+
+    /** What is being fetched right now, then how long the install has been going. */
+    private static Component installDetailLine(EngineInstaller.Progress progress) {
+        long minutes = Math.max(0L, (System.currentTimeMillis() - progress.startedAt()) / 60_000L);
+        Component elapsed = Component.translatable("svvoicechanger.ai.install.elapsed", minutes);
+        return progress.detail().isBlank()
+                ? elapsed
+                : Component.literal(progress.detail() + "\n").append(elapsed);
+    }
+
+    /**
+     * A filling bar for downloads of known size. uv gives no total for the
+     * packages, the longest step, so there a block sweeps across instead:
+     * a bar that moves says the install is alive without inventing a number.
+     */
+    private static void paintInstallBar(StudioGraphics graphics, EngineInstaller.Progress progress,
+                                        int x, int y, int width) {
+        if (progress.percent() >= 0) {
+            StudioPaint.bar(graphics, x, y, width, 6, progress.percent() / 100.0D, StudioPaint.GREEN);
+        } else {
+            StudioPaint.sweep(graphics, x, y, width, 6, System.currentTimeMillis(), StudioPaint.GREEN);
+        }
     }
 
     private void toggleAiVoice() {
@@ -254,10 +325,14 @@ public final class AiVoiceScreen extends CompatScreen {
 
     private void openGallery(EngineKind engine) {
         List<EngineModel> voices = ai().status(engine).models();
-        String selected = engine == EngineKind.ELEVENLABS ? elevenLabs().voiceId() : localSettings(engine).modelId();
+        String selected = selectedVoiceId(engine);
         AiModelPickerScreen gallery = new AiModelPickerScreen(this,
                 Component.translatable("svvoicechanger.ai.picker.voice"), voices, selected,
-                voice -> selectVoice(engine, voice));
+                voice -> selectVoice(engine, voice))
+                .withLiveModels(() -> ai().status(engine).models(), () -> selectedVoiceId(engine));
+        if (engine == EngineKind.VOICE_ENGINE) {
+            gallery.withEmptyText(Component.translatable("svvoicechanger.ai.picker.empty.engine"));
+        }
         if (ai().canPreview(engine)) {
             gallery.withPreview(voice -> ai().previewVoice(engine, voice.id()));
         }
@@ -269,6 +344,10 @@ public final class AiVoiceScreen extends CompatScreen {
             gallery.withExtraButton(Component.translatable("svvoicechanger.ai.voices.own"), this::openTraining);
         }
         ClientScreens.open(gallery);
+    }
+
+    private String selectedVoiceId(EngineKind engine) {
+        return engine == EngineKind.ELEVENLABS ? elevenLabs().voiceId() : localSettings(engine).modelId();
     }
 
     private void selectVoice(EngineKind engine, EngineModel voice) {
@@ -316,6 +395,7 @@ public final class AiVoiceScreen extends CompatScreen {
                     () -> AiStatusText.engineColor(ai().status(kind)), 1);
         }
         addStatus();
+        addInstallSection();
 
         this.list.category(Component.translatable("svvoicechanger.ai.section.main"));
         addOption("svvoicechanger.studio.row.enabled", "svvoicechanger.tab.enable.desc", this.addon::toggleEnabled,
@@ -339,7 +419,6 @@ public final class AiVoiceScreen extends CompatScreen {
             case VOICE_ENGINE, W_OKADA -> buildLocalEngine(this.shownEngine);
         }
 
-        addInstallProgress();
         this.list.gap(6);
         this.list.row(button("svvoicechanger.ai.simple.back", "svvoicechanger.ai.simple.back.desc",
                 () -> switchMode(false)));
@@ -499,19 +578,6 @@ public final class AiVoiceScreen extends CompatScreen {
                 String.format(Locale.ROOT, "%.1f", shown.downloadMegabytes() / 1000.0D));
     }
 
-    /** What the installer is doing, while it is doing something or has just failed; otherwise null. */
-    private Component installProgressLine() {
-        EngineInstaller.Progress progress = ai().installer().progress();
-        return switch (progress.state()) {
-            case INSTALLING -> Component.translatable("svvoicechanger.ai.install.progress",
-                    Component.translatable("svvoicechanger.ai.install.step." + progress.step()),
-                    progress.percent() >= 0 ? progress.percent() + "%" : "",
-                    progress.detail());
-            case FAILED -> Component.translatable("svvoicechanger.ai.install.failed", progress.detail());
-            default -> null;
-        };
-    }
-
     private void openModelsFolder() {
         try {
             Files.createDirectories(EngineFiles.modelsDirectory());
@@ -563,9 +629,15 @@ public final class AiVoiceScreen extends CompatScreen {
 
     private void pickLocalModel(EngineKind kind) {
         List<EngineModel> models = ai().status(kind).models();
-        ClientScreens.open(new AiModelPickerScreen(this, Component.translatable("svvoicechanger.ai.picker.model"),
+        AiModelPickerScreen picker = new AiModelPickerScreen(this, Component.translatable("svvoicechanger.ai.picker.model"),
                 models, localSettings(kind).modelId(),
-                model -> updateLocal(kind, engine -> engine.withModel(model.id()))));
+                model -> updateLocal(kind, engine -> engine.withModel(model.id())))
+                .withLiveModels(() -> ai().status(kind).models(), () -> selectedVoiceId(kind));
+        if (kind == EngineKind.VOICE_ENGINE) {
+            picker.withEmptyText(Component.translatable("svvoicechanger.ai.picker.empty.engine"))
+                    .withExtraButton(Component.translatable("svvoicechanger.ai.install.models"), this::openModelsFolder);
+        }
+        ClientScreens.open(picker);
     }
 
     private void updateElevenLabs(UnaryOperator<AiVoiceSettings.ElevenLabs> change) {

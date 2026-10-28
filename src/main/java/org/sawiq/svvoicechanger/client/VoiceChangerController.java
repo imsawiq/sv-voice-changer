@@ -12,6 +12,7 @@ import org.sawiq.svvoicechanger.client.ai.AiVoiceController;
 import org.sawiq.svvoicechanger.client.ai.AiVoiceSettings;
 import org.sawiq.svvoicechanger.client.ai.AiVoiceSettingsStore;
 import org.sawiq.svvoicechanger.client.ai.audio.AudioFrames;
+import org.sawiq.svvoicechanger.client.ai.install.EngineInstaller;
 import org.sawiq.svvoicechanger.client.ai.runtime.AiVoiceRuntime;
 import org.sawiq.svvoicechanger.client.ai.runtime.AiVoiceStream;
 import org.sawiq.svvoicechanger.client.compat.ClientScreens;
@@ -177,6 +178,20 @@ public final class VoiceChangerController {
         String trained = this.aiVoice.takeFinishedTraining();
         if (trained != null) {
             ClientScreens.sendChatMessage(Component.translatable("svvoicechanger.ai.train.finished_chat", trained));
+        }
+
+        String addedVoice = this.aiVoice.takeAddedVoice();
+        if (addedVoice != null) {
+            ClientScreens.sendChatMessage(Component.translatable("svvoicechanger.ai.voices.added_chat", addedVoice));
+        }
+
+        // The install runs in the background, often with the studio closed,
+        // so its end is said where the player is looking.
+        EngineInstaller.Progress installed = this.aiVoice.installer().takeOutcome();
+        if (installed != null) {
+            ClientScreens.sendChatMessage(installed.state() == EngineInstaller.State.INSTALLED
+                    ? Component.translatable("svvoicechanger.ai.install.done_chat")
+                    : Component.translatable("svvoicechanger.ai.install.failed_chat", installed.detail()));
         }
 
         AiVoiceStream.Activity activity = this.aiVoice.activity();
